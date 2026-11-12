@@ -1,18 +1,32 @@
 'use client'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Brain, Play, Settings2, AlertTriangle, CheckCircle2, Clock, BarChart3, ChevronDown, ChevronUp } from 'lucide-react'
+import { Brain, Play, Settings2, AlertTriangle, CheckCircle2, BarChart3, ChevronDown, ChevronUp, MapPin } from 'lucide-react'
 import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
 
 const ALGORITHMS = [
-  { id: 'csp', name: 'CSP (Constraint Satisfaction)', desc: 'Enforces hard constraints with weighted scoring optimization', color: 'bg-blue-500' },
-  { id: 'backtracking', name: 'Backtracking Search', desc: 'Exhaustive search with constraint-based pruning', color: 'bg-purple-500' },
-  { id: 'bayesian', name: 'Bayesian Probabilistic', desc: 'Probability-based allocation with uncertainty quantification', color: 'bg-indigo-500' },
-  { id: 'multi_agent', name: 'Multi-Agent System', desc: '6 specialized agents coordinate for optimal allocation', color: 'bg-emerald-500' },
+  { id: 'csp',         name: 'CSP (Constraint Satisfaction)', desc: 'Enforces hard constraints with weighted scoring optimization', color: 'bg-blue-500' },
+  { id: 'backtracking', name: 'Backtracking Search',           desc: 'Exhaustive search with constraint-based pruning',              color: 'bg-purple-500' },
+  { id: 'bayesian',    name: 'Bayesian Probabilistic',        desc: 'Probability-based allocation with uncertainty quantification', color: 'bg-indigo-500' },
+  { id: 'multi_agent', name: 'Multi-Agent System',            desc: '6 specialized agents coordinate for optimal allocation',       color: 'bg-emerald-500' },
 ]
 
 const DEFAULT_WEIGHTS = { safety: 0.35, distance: 0.25, overcrowding: 0.20, medical: 0.15, vulnerability: 0.05 }
+
+// Shelter geo coordinates for map
+const SHELTER_COORDS: Record<string, { lat: number; lng: number; name: string }> = {
+  'S-01': { lat: 13.0827, lng: 80.2707, name: 'Gandhi Community Center' },
+  'S-02': { lat: 13.1300, lng: 80.2200, name: 'Kolathur Relief Camp' },
+  'S-03': { lat: 12.9500, lng: 80.1400, name: 'Chrompet Flood Camp' },
+  'S-04': { lat: 12.8500, lng: 80.2200, name: 'DRDA Relief Camp Alpha' },
+  'S-05': { lat: 13.2000, lng: 80.3000, name: 'Red Hills Shelter' },
+  'S-06': { lat: 13.1000, lng: 80.0900, name: 'Army Relief Center Avadi' },
+  'S-07': { lat: 12.9290, lng: 80.1030, name: 'Tambaram Evacuation Hub' },
+  'S-08': { lat: 13.0150, lng: 80.2560, name: 'Velachery Shelter ⚠' },
+  'S-09': { lat: 12.9690, lng: 79.9460, name: 'Sriperumbudur Camp' },
+  'S-10': { lat: 13.0500, lng: 80.2500, name: 'T. Nagar Relief Center' },
+}
 
 export default function AllocationPage() {
   const [algorithm, setAlgorithm] = useState('csp')
@@ -22,8 +36,20 @@ export default function AllocationPage() {
   const [result, setResult] = useState<any>(null)
   const [expandedResult, setExpandedResult] = useState<number | null>(null)
   const [showWeights, setShowWeights] = useState(false)
+  const [showMap, setShowMap] = useState(false)
 
   const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0)
+
+  // Build OSM iframe URL centred on Chennai showing all allocated shelters
+  const buildMapUrl = (results: any[]) => {
+    const shelterIds = Array.from(new Set(results.map((r: any) => r.shelter_id)))
+    const coords = shelterIds.map(id => SHELTER_COORDS[id]).filter(Boolean)
+    if (coords.length === 0) return null
+    const lat = coords.reduce((s, c) => s + c.lat, 0) / coords.length
+    const lng = coords.reduce((s, c) => s + c.lng, 0) / coords.length
+    const markers = coords.map(c => `${c.lat},${c.lng}`).join('|')
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.3},${lat - 0.25},${lng + 0.3},${lat + 0.25}&layer=mapnik&marker=${lat},${lng}`
+  }
 
   const runAllocation = async () => {
     if (Math.abs(totalWeight - 1.0) > 0.01) {
@@ -31,6 +57,7 @@ export default function AllocationPage() {
       return
     }
     setRunning(true)
+    setShowMap(false)
     try {
       const payload: any = { algorithm, weights }
       if (whatIf.enabled) {
@@ -43,7 +70,6 @@ export default function AllocationPage() {
       setResult(r.data)
       toast.success(`Allocation complete: ${r.data.total_allocated || 0} people assigned`)
     } catch {
-      // Offline fallback: execute real CSP logic in browser state
       const dynamicResult = {
         ...DEMO_RESULT,
         algorithm: algorithm.toUpperCase(),
@@ -57,8 +83,11 @@ export default function AllocationPage() {
       toast.success(`${algorithm.toUpperCase()} allocation solved: ${dynamicResult.total_allocated} victims assigned!`)
     } finally {
       setRunning(false)
+      setTimeout(() => setShowMap(true), 500)
     }
   }
+
+  const mapUrl = result?.results ? buildMapUrl(result.results) : null
 
   return (
     <div className="p-6 space-y-5">
@@ -192,10 +221,10 @@ export default function AllocationPage() {
               {/* Summary Cards */}
               <div className="grid grid-cols-4 gap-3">
                 {[
-                  { label: 'Allocated', value: result.total_allocated, color: 'text-rescue-green', bg: 'bg-green-50' },
-                  { label: 'Unallocated', value: result.total_unallocated, color: 'text-rescue-red', bg: 'bg-red-50' },
-                  { label: 'States Explored', value: result.states_explored?.toLocaleString(), color: 'text-blue-600', bg: 'bg-blue-50' },
-                  { label: 'Time (ms)', value: result.execution_time_ms, color: 'text-purple-600', bg: 'bg-purple-50' },
+                  { label: 'Allocated',       value: result.total_allocated,              color: 'text-rescue-green', bg: 'bg-green-50' },
+                  { label: 'Unallocated',     value: result.total_unallocated,            color: 'text-rescue-red',   bg: 'bg-red-50' },
+                  { label: 'States Explored', value: result.states_explored?.toLocaleString(), color: 'text-blue-600',   bg: 'bg-blue-50' },
+                  { label: 'Time (ms)',        value: result.execution_time_ms,            color: 'text-purple-600',   bg: 'bg-purple-50' },
                 ].map(c => (
                   <div key={c.label} className={`${c.bg} rounded-xl p-3 text-center`}>
                     <p className={`text-xl font-bold ${c.color}`}>{c.value}</p>
@@ -204,7 +233,7 @@ export default function AllocationPage() {
                 ))}
               </div>
 
-              {/* Summary */}
+              {/* Summary banner */}
               <div className={`p-4 rounded-xl border ${result.success ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'}`}>
                 <div className="flex items-center gap-2 mb-1">
                   {result.success ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <AlertTriangle className="w-4 h-4 text-orange-600" />}
@@ -224,7 +253,85 @@ export default function AllocationPage() {
                 </div>
               )}
 
-              {/* Allocation Results */}
+              {/* ===== ALLOCATION MAP ===== */}
+              <AnimatePresence>
+                {showMap && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="bg-white rounded-xl shadow-card border border-rescue-border overflow-hidden">
+                      <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-rescue-blue" />
+                          <h3 className="font-semibold text-gray-800 text-sm">Allocation Result Map</h3>
+                          <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100">
+                            {Array.from(new Set(result.results?.map((r: any) => r.shelter_id) || [])).length} shelters active
+                          </span>
+                        </div>
+                        <a
+                          href={`https://jagadeeshreddypunnati-sys.github.io/AI-powered-Disaster-Management-Dashboard/map/`}
+                          target="_blank" rel="noreferrer"
+                          className="text-xs text-rescue-blue hover:text-blue-700 font-medium transition"
+                        >
+                          Open Full Map →
+                        </a>
+                      </div>
+
+                      {/* Shelter assignment legend */}
+                      <div className="px-5 py-3 border-b border-gray-50 flex flex-wrap gap-2">
+                        {Array.from(new Set(result.results?.map((r: any) => r.shelter_id) || [])).map((sid: any) => {
+                          const coords = SHELTER_COORDS[sid]
+                          const count = result.results?.filter((r: any) => r.shelter_id === sid).reduce((s: number, r: any) => s + (r.allocated_people || 1), 0)
+                          return (
+                            <div key={sid} className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1">
+                              <span className="text-blue-500 text-xs font-mono font-bold">{sid}</span>
+                              <span className="text-gray-600 text-xs">{coords?.name || sid}</span>
+                              <span className="text-blue-700 text-xs font-semibold">({count} people)</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Embedded OSM map */}
+                      <div className="relative h-56">
+                        <iframe
+                          src="https://www.openstreetmap.org/export/embed.html?bbox=79.7000,12.7000,80.5000,13.3000&layer=mapnik"
+                          className="w-full h-full border-0"
+                          title="Allocation Result Map"
+                          loading="lazy"
+                        />
+                        {/* Overlay shelter pins */}
+                        <div className="absolute inset-0 pointer-events-none">
+                          {Array.from(new Set(result.results?.map((r: any) => r.shelter_id) || [])).map((sid: any) => {
+                            const coords = SHELTER_COORDS[sid]
+                            if (!coords) return null
+                            // Convert lat/lng to % within our bbox (79.7–80.5 lng, 12.7–13.3 lat)
+                            const x = ((coords.lng - 79.7) / (80.5 - 79.7)) * 100
+                            const y = ((13.3 - coords.lat) / (13.3 - 12.7)) * 100
+                            return (
+                              <div
+                                key={sid}
+                                className="absolute flex flex-col items-center"
+                                style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -100%)' }}
+                              >
+                                <div className="bg-rescue-blue text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
+                                  {sid}
+                                </div>
+                                <div className="w-2 h-2 bg-rescue-blue rounded-full border-2 border-white shadow" />
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Allocation Results Table */}
               <div className="bg-white rounded-xl shadow-card border border-rescue-border overflow-hidden">
                 <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-rescue-blue" />
@@ -306,9 +413,11 @@ const DEMO_RESULT = {
   summary: 'CSP allocated 47 people (8 victim groups) across 4 shelters. Explored 847 states in 42.3ms. 2 groups remain unallocated due to insufficient medical capacity.',
   warnings: ['⚠ HIGH PRIORITY victim Ibrahim Sheikh (ID:V-003) could not be fully accommodated in medical shelter'],
   results: [
-    { victim_name: 'Rajesh Kumar', shelter_name: 'Gandhi Community Center', shelter_id: 'S-01', allocated_people: 5, score: 0.812, explanation: 'Score 0.812: Safety 85%, Distance 12km, Medical available', risk_score: 0.08, distance_km: 12.1, algorithm: 'CSP' },
-    { victim_name: 'Ibrahim Sheikh', shelter_name: 'DRDA Relief Camp Alpha', shelter_id: 'S-04', allocated_people: 7, score: 0.891, explanation: 'Score 0.891: Medical facility match, Accessibility verified, Low risk shelter', risk_score: 0.10, distance_km: 8.4, algorithm: 'CSP' },
-    { victim_name: 'Fatima Begum', shelter_name: 'Army Relief Center Bravo', shelter_id: 'S-06', allocated_people: 9, score: 0.934, explanation: 'Score 0.934: Highest capacity, Medical + Accessibility, Risk 5%', risk_score: 0.05, distance_km: 15.2, algorithm: 'CSP' },
+    { victim_name: 'Rajesh Kumar',   shelter_name: 'Gandhi Community Center', shelter_id: 'S-01', allocated_people: 5, score: 0.812, explanation: 'Score 0.812: Safety 85%, Distance 12km, Medical available', risk_score: 0.08, distance_km: 12.1, algorithm: 'CSP' },
+    { victim_name: 'Ibrahim Sheikh', shelter_name: 'DRDA Relief Camp Alpha',  shelter_id: 'S-04', allocated_people: 7, score: 0.891, explanation: 'Score 0.891: Medical facility match, Accessibility verified, Low risk shelter', risk_score: 0.10, distance_km: 8.4,  algorithm: 'CSP' },
+    { victim_name: 'Fatima Begum',   shelter_name: 'Army Relief Center Avadi', shelter_id: 'S-06', allocated_people: 9, score: 0.934, explanation: 'Score 0.934: Highest capacity, Medical + Accessibility, Risk 5%', risk_score: 0.05, distance_km: 15.2, algorithm: 'CSP' },
+    { victim_name: 'Priya Sharma',   shelter_name: 'Kolathur Relief Camp',    shelter_id: 'S-02', allocated_people: 4, score: 0.775, explanation: 'Score 0.775: Distance optimal 9km, Capacity available, Safety 78%', risk_score: 0.14, distance_km: 9.3,  algorithm: 'CSP' },
+    { victim_name: 'Anbu Selvam',    shelter_name: 'Red Hills Shelter',       shelter_id: 'S-05', allocated_people: 6, score: 0.820, explanation: 'Score 0.820: Elevated zone, Low flood risk, Full medical', risk_score: 0.06, distance_km: 11.8, algorithm: 'CSP' },
   ],
   unallocated_victims: [
     { victim_name: 'Kamala Bai', family_size: 1, reason: 'No medical shelter with available specialized bed capacity' },

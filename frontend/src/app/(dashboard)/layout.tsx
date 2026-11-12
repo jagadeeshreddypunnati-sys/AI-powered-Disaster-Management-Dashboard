@@ -1,11 +1,11 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Map, Users, Building2, Brain, MessageSquareText,
   Network, BarChart3, FileBarChart, Settings, Shield, ChevronLeft,
-  ChevronRight, Bell, LogOut, Menu, AlertTriangle, Wifi
+  ChevronRight, Bell, LogOut, AlertTriangle, Wifi, X, CheckCircle2
 } from 'lucide-react'
 import { getUser, clearAuth, isAuthenticated } from '@/lib/auth'
 import Link from 'next/link'
@@ -24,22 +24,52 @@ const NAV_ITEMS = [
   { href: '/settings',     icon: Settings,             label: 'Admin Settings',   badge: null },
 ]
 
+const LIVE_ALERTS = [
+  { id: 1, type: 'critical', title: 'Shelter S-08 DAMAGED', body: 'Chennai Coastal — bypass immediately. Reroute to S-06 or S-09.', time: '2 min ago', read: false },
+  { id: 2, type: 'warning',  title: 'Cyclone Category 4 approaching', body: 'Bay of Bengal corridor. 25,000 residents at risk. Evacuation in progress.', time: '11 min ago', read: false },
+  { id: 3, type: 'info',     title: 'S-01 Gandhi Center: 92% capacity', body: 'Allocate remaining victims to S-04 DRDA or S-07 Tambaram.', time: '34 min ago', read: false },
+  { id: 4, type: 'success',  title: 'CSP allocation completed', body: '47 victims assigned across 4 shelters. 8 require manual review.', time: '1 hr ago', read: true },
+  { id: 5, type: 'warning',  title: 'Coimbatore seismic aftershock', body: 'Magnitude 4.1 aftershock recorded. Structural re-assessment underway.', time: '2 hr ago', read: true },
+]
+
+const ALERT_STYLES: Record<string, { border: string; icon: string; iconColor: string }> = {
+  critical: { border: 'border-l-rescue-red',   icon: '🔴', iconColor: 'text-red-600' },
+  warning:  { border: 'border-l-orange-400',   icon: '🟠', iconColor: 'text-orange-500' },
+  info:     { border: 'border-l-rescue-blue',  icon: '🔵', iconColor: 'text-blue-500' },
+  success:  { border: 'border-l-rescue-green', icon: '✅', iconColor: 'text-green-600' },
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const [alertCount] = useState(3)
+  const [alerts, setAlerts] = useState(LIVE_ALERTS)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const notifRef = useRef<HTMLDivElement>(null)
+
+  const unreadCount = alerts.filter(a => !a.read).length
 
   useEffect(() => {
     if (!isAuthenticated()) { router.replace('/auth/login'); return }
     setUser(getUser())
   }, [router])
 
-  const handleLogout = () => {
-    clearAuth()
-    router.push('/auth/login')
-  }
+  // Close notification panel when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setShowNotifications(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const handleLogout = () => { clearAuth(); router.push('/auth/login') }
+
+  const markAllRead = () => setAlerts(a => a.map(x => ({ ...x, read: true })))
+  const dismissAlert = (id: number) => setAlerts(a => a.filter(x => x.id !== id))
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -159,16 +189,102 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Wifi className="w-3.5 h-3.5" />
               <span>Connected</span>
             </div>
-            <div className="relative">
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition relative">
+
+            {/* Notification Bell */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-2 rounded-lg hover:bg-gray-100 transition relative"
+                aria-label="Notifications"
+              >
                 <Bell className="w-4 h-4 text-gray-600" />
-                {alertCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rescue-red rounded-full text-white text-[9px] flex items-center justify-center font-bold">
-                    {alertCount}
-                  </span>
+                {unreadCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rescue-red rounded-full text-white text-[9px] flex items-center justify-center font-bold"
+                  >
+                    {unreadCount}
+                  </motion.span>
                 )}
               </button>
+
+              {/* Notifications Dropdown */}
+              <AnimatePresence>
+                {showNotifications && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-10 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-gray-600" />
+                        <span className="font-semibold text-gray-800 text-sm">Live Alerts</span>
+                        {unreadCount > 0 && (
+                          <span className="bg-rescue-red text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                            {unreadCount} new
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={markAllRead}
+                        className="text-xs text-rescue-blue hover:text-blue-700 font-medium transition"
+                      >
+                        Mark all read
+                      </button>
+                    </div>
+
+                    {/* Alerts list */}
+                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                      {alerts.length === 0 ? (
+                        <div className="flex flex-col items-center py-8 text-gray-400">
+                          <CheckCircle2 className="w-8 h-8 mb-2" />
+                          <p className="text-sm">All caught up!</p>
+                        </div>
+                      ) : (
+                        alerts.map(alert => {
+                          const style = ALERT_STYLES[alert.type]
+                          return (
+                            <div
+                              key={alert.id}
+                              className={`flex gap-3 px-4 py-3 border-l-4 ${style.border} ${alert.read ? 'bg-white' : 'bg-blue-50/40'} hover:bg-gray-50 transition group`}
+                            >
+                              <span className="text-base flex-shrink-0 mt-0.5">{style.icon}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-xs font-semibold ${alert.read ? 'text-gray-700' : 'text-gray-900'}`}>
+                                  {alert.title}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{alert.body}</p>
+                                <p className="text-[10px] text-gray-400 mt-1">{alert.time}</p>
+                              </div>
+                              <button
+                                onClick={() => dismissAlert(alert.id)}
+                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition flex-shrink-0"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 text-center">
+                      <Link href="/analytics" onClick={() => setShowNotifications(false)}>
+                        <span className="text-xs text-rescue-blue hover:text-blue-700 font-medium transition">
+                          View all in Analytics →
+                        </span>
+                      </Link>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+
             <div className="text-xs text-gray-500 font-mono hidden lg:block">
               {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
             </div>
