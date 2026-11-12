@@ -5,15 +5,24 @@ import { MessageSquareText, X, Send, Shield, Sparkles, Database } from 'lucide-r
 import { api } from '@/lib/api'
 import { v4 as uuid } from 'uuid'
 import ReactMarkdown from 'react-markdown'
+import IncidentMapCard from './IncidentMapCard'
+import { queryRescueBot, IncidentLocation } from '@/lib/rescueBotEngine'
 
-type Message = { role: 'user' | 'assistant'; content: string; sources?: any[]; timestamp: Date }
+type Message = {
+  role: 'user' | 'assistant'
+  content: string
+  sources?: any[]
+  incidentMap?: IncidentLocation
+  timestamp: Date
+}
 
 export default function FloatingChatButton() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: `Hello! I'm **RescueBot AI**. Ask me for available shelters, emergency capacity, high-risk disaster zones, or allocation advice.`,
+      content: `Hello! I'm **RescueBot AI**.\n\nAsk me about live disaster incidents (e.g. *"Where is the flood?"*), shelter availability, medical clinics, or active hazard zones with interactive maps.`,
+      sources: [{ id: 'SYS', name: 'Rescue AI' }],
       timestamp: new Date(),
     }
   ])
@@ -46,6 +55,9 @@ export default function FloatingChatButton() {
     if (!textToSend) setInput('')
     setLoading(true)
 
+    // Execute precision query engine
+    const directAns = queryRescueBot(text)
+
     try {
       const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }))
       const res = await api.post('/api/chat/message', {
@@ -56,26 +68,20 @@ export default function FloatingChatButton() {
 
       const botMsg: Message = {
         role: 'assistant',
-        content: res.data.reply,
-        sources: res.data.sources || [],
+        content: res.data.reply || directAns.text,
+        sources: res.data.sources?.length ? res.data.sources : directAns.sources,
+        incidentMap: directAns.incidentMap,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, botMsg])
     } catch {
-      let replyText = `I have cross-referenced the current database for "${text}":\n\n- **Safest Option:** Gandhi Community Center (S-01) with 480 available spaces.\n- **Medical Hub:** Army Relief Center Bravo (S-06) with 1,350 available beds.\n- **System Status:** 9 operational shelters, 6,570 total free spaces.`
-      if (text.toLowerCase().includes('safe')) {
-        replyText = `🏠 **Safest Shelter:** **Gandhi Community Center (S-01)**. Risk Score: 0.08, Available: 480 spaces, Medical on-site.`
-      } else if (text.toLowerCase().includes('medical')) {
-        replyText = `🏥 **Medical Facilities:** S-01 (480 spaces), S-04 (420 spaces), S-06 (1,350 spaces) have active medical triage teams.`
-      } else if (text.toLowerCase().includes('risk') || text.toLowerCase().includes('hazard')) {
-        replyText = `🚨 **High-Risk Alert:** Shelter S-08 is marked DAMAGED (risk: 0.95) and excluded. S-02 is at 96% capacity.`
-      }
       setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          content: replyText,
-          sources: [{ id: 'S-01', name: 'Verified Database' }],
+          content: directAns.text,
+          sources: directAns.sources,
+          incidentMap: directAns.incidentMap,
           timestamp: new Date(),
         }
       ])
@@ -105,7 +111,7 @@ export default function FloatingChatButton() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 w-[380px] sm:w-[420px] h-[550px] bg-white rounded-2xl shadow-2xl border border-rescue-border flex flex-col z-50 overflow-hidden"
+            className="fixed bottom-24 right-6 w-[380px] sm:w-[440px] h-[570px] bg-white rounded-2xl shadow-2xl border border-rescue-border flex flex-col z-50 overflow-hidden"
           >
             {/* Header */}
             <div className="bg-navy-900 text-white px-4 py-3 flex items-center justify-between border-b border-navy-700">
@@ -116,8 +122,8 @@ export default function FloatingChatButton() {
                 <div>
                   <h4 className="text-sm font-semibold">RescueBot AI</h4>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rescue-green animate-pulse" />
-                    <span className="text-[10px] text-rescue-green font-medium">ONLINE · RAG GROUNDED</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[10px] text-emerald-400 font-medium">TRAINED INCIDENT AGENT</span>
                   </div>
                 </div>
               </div>
@@ -133,7 +139,13 @@ export default function FloatingChatButton() {
             <div className="bg-slate-50 border-b border-slate-100 px-3 py-2 flex items-center gap-1.5 overflow-x-auto text-[11px] whitespace-nowrap">
               <Sparkles className="w-3.5 h-3.5 text-purple-600 flex-shrink-0" />
               <button
-                onClick={() => handleSend('Find the safest available shelter')}
+                onClick={() => handleSend('Where is the flood incident? Show map')}
+                className="px-2 py-0.5 bg-white border border-slate-200 rounded-full hover:border-rescue-blue hover:text-rescue-blue transition text-slate-600"
+              >
+                Flood Map 🗺️
+              </button>
+              <button
+                onClick={() => handleSend('What is the safest available shelter?')}
                 className="px-2 py-0.5 bg-white border border-slate-200 rounded-full hover:border-rescue-blue hover:text-rescue-blue transition text-slate-600"
               >
                 Safest shelter?
@@ -145,10 +157,10 @@ export default function FloatingChatButton() {
                 Medical shelters?
               </button>
               <button
-                onClick={() => handleSend('Show me the highest-risk shelters')}
+                onClick={() => handleSend('Show map for the cyclone')}
                 className="px-2 py-0.5 bg-white border border-slate-200 rounded-full hover:border-rescue-blue hover:text-rescue-blue transition text-slate-600"
               >
-                High risk?
+                Cyclone map 🌪️
               </button>
             </div>
 
@@ -160,7 +172,7 @@ export default function FloatingChatButton() {
                   className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
+                    className={`max-w-[90%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
                       m.role === 'user'
                         ? 'bg-rescue-blue text-white rounded-br-xs'
                         : 'bg-white border border-slate-200 text-slate-800 shadow-sm rounded-bl-xs'
@@ -173,6 +185,10 @@ export default function FloatingChatButton() {
                     ) : (
                       m.content
                     )}
+
+                    {m.incidentMap && (
+                      <IncidentMapCard incident={m.incidentMap} />
+                    )}
                   </div>
 
                   {m.sources && m.sources.length > 0 && (
@@ -180,7 +196,7 @@ export default function FloatingChatButton() {
                       {m.sources.map((s, si) => (
                         <span
                           key={si}
-                          className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-rescue-blue border border-blue-200 rounded-full px-2 py-0.2"
+                          className="inline-flex items-center gap-1 text-[9px] bg-blue-50 text-rescue-blue border border-blue-200 rounded-full px-2 py-0.2"
                         >
                           <Database className="w-2.5 h-2.5" /> {s.name || s.id}
                         </span>
@@ -195,7 +211,7 @@ export default function FloatingChatButton() {
                   <div className="w-1.5 h-1.5 rounded-full bg-rescue-blue animate-bounce" />
                   <div className="w-1.5 h-1.5 rounded-full bg-rescue-blue animate-bounce [animation-delay:0.2s]" />
                   <div className="w-1.5 h-1.5 rounded-full bg-rescue-blue animate-bounce [animation-delay:0.4s]" />
-                  <span className="text-[11px] ml-1">Analyzing database...</span>
+                  <span className="text-[11px] ml-1">Searching incident telemetry...</span>
                 </div>
               )}
               <div ref={bottomRef} />
@@ -214,13 +230,13 @@ export default function FloatingChatButton() {
                   type="text"
                   value={input}
                   onChange={e => setInput(e.target.value)}
-                  placeholder="Ask RescueBot about shelter states..."
+                  placeholder="Ask RescueBot about an incident or shelter..."
                   className="flex-1 bg-slate-100 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-rescue-blue transition"
                 />
                 <button
                   type="submit"
                   disabled={loading || !input.trim()}
-                  className="w-8 h-8 rounded-xl bg-rescue-blue text-white flex items-center justify-center hover:bg-blue-700 disabled:opacity-40 transition"
+                  className="w-8 h-8 rounded-xl bg-rescue-blue text-white flex items-center justify-center hover:bg-blue-700 disabled:opacity-40 transition shadow-xs"
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>
