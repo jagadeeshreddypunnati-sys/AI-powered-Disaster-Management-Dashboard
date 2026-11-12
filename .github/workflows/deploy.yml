@@ -37,7 +37,7 @@ jobs:
       - name: Build Next.js Static Export
         run: npm run build
         env:
-          NEXT_PUBLIC_BASE_PATH: '/AI-Based-Disaster-Shelter-Allocation'
+          NEXT_PUBLIC_BASE_PATH: '/AI-powered-Disaster-Management-Dashboard'
           NEXT_PUBLIC_API_URL: 'https://rescue-ai-backend.onrender.com'
 
       - name: Upload Artifact
