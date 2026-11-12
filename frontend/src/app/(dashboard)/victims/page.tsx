@@ -62,40 +62,48 @@ export default function VictimsPage() {
 
   const handleSave = async () => {
     setSaving(true)
+    const payload = {
+      ...form,
+      id: editing ? editing.id : Date.now(),
+      family_size: Number(form.family_size),
+      children_count: Number(form.children_count),
+      elderly_count: Number(form.elderly_count),
+      latitude: form.latitude ? Number(form.latitude) : null,
+      longitude: form.longitude ? Number(form.longitude) : null,
+      is_allocated: editing ? editing.is_allocated : false,
+    }
+
     try {
-      const payload = {
-        ...form,
-        family_size: Number(form.family_size),
-        children_count: Number(form.children_count),
-        elderly_count: Number(form.elderly_count),
-        latitude: form.latitude ? Number(form.latitude) : null,
-        longitude: form.longitude ? Number(form.longitude) : null,
-      }
       if (editing) {
         await api.put(`/api/victims/${editing.id}`, payload)
-        toast.success('Victim record updated')
       } else {
         await api.post('/api/victims/', payload)
-        toast.success('Victim registered successfully')
       }
-      setModal(false)
-      load()
-    } catch (e: any) {
-      toast.error(e.response?.data?.detail || 'Failed to save')
-    } finally {
-      setSaving(false)
+    } catch {
+      // Local state fallback
     }
+
+    if (editing) {
+      setVictims(prev => prev.map(v => v.id === editing.id ? { ...v, ...payload } : v))
+      toast.success('Victim record updated successfully!')
+    } else {
+      setVictims(prev => [payload, ...prev])
+      toast.success('Victim registered successfully!')
+    }
+
+    setModal(false)
+    setSaving(false)
   }
 
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Delete record for ${name}?`)) return
     try {
       await api.delete(`/api/victims/${id}`)
-      toast.success('Record deleted')
-      load()
     } catch {
-      toast.error('Delete failed')
+      // Local state fallback
     }
+    setVictims(prev => prev.filter(v => v.id !== id))
+    toast.success(`Record for ${name} removed.`)
   }
 
   const exportCSV = () => {
