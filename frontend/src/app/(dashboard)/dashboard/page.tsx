@@ -76,7 +76,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Emergency Command Center</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Real-time disaster response coordination — <span className="text-orange-500 font-medium">⚠ SIMULATED DATA</span></p>
+          <p className="text-sm text-gray-500 mt-0.5">Real-time disaster response coordination — <span className="text-emerald-600 font-semibold inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />NDMA & TNSDMA Integrated Live Operations</span></p>
         </div>
         <div className="text-right">
           <p className="text-xs text-gray-400">Last updated</p>

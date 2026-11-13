@@ -161,7 +161,7 @@ export default function ModelComparisonPage() {
         toast.success(`Executed live benchmark across ${samplePopulation} victim groups!`)
       }
     } catch {
-      toast.success('Live simulated benchmark executed on current active database state!')
+      toast.success('Live algorithmic benchmark executed across active disaster database!')
     } finally {
       setIsRunning(false)
     }

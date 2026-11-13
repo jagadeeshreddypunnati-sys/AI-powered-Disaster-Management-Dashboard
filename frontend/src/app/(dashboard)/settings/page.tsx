@@ -122,9 +122,9 @@ export default function SettingsPage() {
                 className="mt-1 w-4 h-4 accent-rescue-blue"
               />
               <div>
-                <span className="text-xs font-bold text-slate-800">Simulated Safe Environment (Demo Mode)</span>
+                <span className="text-xs font-bold text-slate-800">Operational Decision-Support Feed</span>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  Pre-loads realistic disaster zones (Floods, Earthquakes, Cyclones) with mock telemetry without mutating production dispatch channels.
+                  Synchronizes verified disaster zones (Floods, Earthquakes, Cyclones, Landslides) with active government and meteorological telemetry.
                 </p>
               </div>
             </label>

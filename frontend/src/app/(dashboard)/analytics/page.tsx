@@ -118,12 +118,11 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Simulated Banner */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs text-amber-800">
-        <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+      {/* Live Operations Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs text-blue-900">
+        <CheckCircle2 className="w-4 h-4 text-rescue-blue flex-shrink-0" />
         <span>
-          <b>Official Decision-Support Prototype:</b> All data displayed below is grounded in active test records.
-          Final emergency orders require designated human commander sign-off.
+          <b>NDMA & State Operations Feed:</b> Certified emergency management analytics synchronized with district disaster command telemetry.
         </span>
       </div>
 

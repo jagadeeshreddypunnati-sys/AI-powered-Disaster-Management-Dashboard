@@ -7,13 +7,15 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: 'pages'
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -38,13 +40,16 @@ jobs:
           NEXT_PUBLIC_BASE_PATH: '/AI-powered-Disaster-Management-Dashboard'
           NEXT_PUBLIC_API_URL: 'https://rescue-ai-backend.onrender.com'
 
-      - name: Ensure .nojekyll Exists
+      - name: Add .nojekyll
         run: touch ./out/.nojekyll
 
-      - name: Deploy to gh-pages Branch
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./frontend/out
           publish_branch: gh-pages
+          cname: ''
           force_orphan: false
+          enable_jekyll: false
+          commit_message: 'deploy: ${{ github.event.head_commit.message }}'

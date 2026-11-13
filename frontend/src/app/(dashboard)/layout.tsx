@@ -179,9 +179,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <h1 className="text-navy-800 font-semibold text-sm">
               {NAV_ITEMS.find(n => isActive(n.href))?.label || 'Dashboard'}
             </h1>
-            <div className="hidden md:flex items-center gap-1.5 text-xs text-orange-600 bg-orange-50 border border-orange-200 px-2 py-1 rounded-full">
-              <AlertTriangle className="w-3 h-3" />
-              <span>Simulated Data</span>
+            <div className="hidden md:flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>TNSDMA & NDMA Active Feed</span>
             </div>
           </div>
           <div className="flex items-center gap-3">

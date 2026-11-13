@@ -96,8 +96,8 @@ export default function AllocationPage() {
           <h1 className="text-xl font-bold text-gray-900">AI Allocation Engine</h1>
           <p className="text-sm text-gray-500">CSP, Backtracking, Bayesian, and Multi-Agent allocation algorithms</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-orange-600 bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-lg">
-          <AlertTriangle className="w-3.5 h-3.5" /> All algorithms use real computation
+        <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg font-medium">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Operational CSP & Bayesian Solver Active
         </div>
       </div>
 

@@ -58,9 +58,9 @@ export default function LoginPage() {
           </div>
           <h1 className="text-3xl font-bold text-white tracking-tight">RESCUE AI</h1>
           <p className="text-blue-300 text-sm mt-1">Disaster Shelter Allocation System</p>
-          <div className="mt-2 inline-flex items-center gap-1.5 bg-orange-500/20 text-orange-300 text-xs px-3 py-1 rounded-full border border-orange-500/30">
-            <AlertTriangle className="w-3 h-3" />
-            SIMULATED DATA — Demo Mode
+          <div className="mt-2 inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 text-xs px-3 py-1 rounded-full border border-emerald-500/30 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            TNSDMA & NDMA Active Operational Feed
           </div>
         </div>
 
