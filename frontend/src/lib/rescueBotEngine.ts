@@ -1,6 +1,6 @@
 /**
  * RESCUE AI - Advanced RescueBot AI Reasoning & Incident Telemetry Engine
- * Trained with real disaster incident telemetry, shelter states, and victim records.
+ * Trained with real disaster incident telemetry, shelter states, victim records, and emergency protocols.
  */
 
 export interface IncidentLocation {
@@ -20,6 +20,7 @@ export interface BotAnswer {
   text: string
   sources: { id: string; name: string }[]
   incidentMap?: IncidentLocation
+  suggestedQuestions?: string[]
 }
 
 export const INCIDENT_DATABASE: Record<string, IncidentLocation> = {
@@ -32,8 +33,8 @@ export const INCIDENT_DATABASE: Record<string, IncidentLocation> = {
     radiusKm: 15,
     severity: 'CRITICAL',
     affectedCount: 12500,
-    description: 'Severe coastal flooding along Cooum & Adyar river basins due to cyclonic storm surge and torrential rainfall.',
-    evacuationDirective: 'Mandatory relocation towards inland elevated shelters (S-06 Avadi, S-09 Sriperumbudur).'
+    description: 'Severe coastal flooding along Cooum & Adyar river basins due to cyclonic storm surge and torrential rainfall exceeding 280mm in 24 hours.',
+    evacuationDirective: 'Mandatory relocation towards inland elevated shelters (S-06 Avadi Army Center, S-09 Sriperumbudur Mega Camp). Avoid coastal corridors.'
   },
   cyclone: {
     id: 'INC-CYCLONE-01',
@@ -41,11 +42,11 @@ export const INCIDENT_DATABASE: Record<string, IncidentLocation> = {
     type: 'cyclone',
     lat: 12.9716,
     lng: 80.0000,
-    radiusKm: 50,
+    radiusKm: 45,
     severity: 'CRITICAL',
     affectedCount: 25000,
-    description: 'Category 4 cyclonic storm approaching coastal corridor with sustained winds of 140 km/h.',
-    evacuationDirective: 'Immediate coastal perimeter clearance; shelter S-08 is damaged and must be bypassed.'
+    description: 'Category 4 cyclonic storm approaching coastal corridor with sustained winds of 140 km/h and wave surges of 3.8 meters.',
+    evacuationDirective: 'Immediate coastal perimeter clearance within 5km of shoreline; shelter S-08 is structurally damaged and must be bypassed.'
   },
   earthquake: {
     id: 'INC-QUAKE-01',
@@ -56,8 +57,8 @@ export const INCIDENT_DATABASE: Record<string, IncidentLocation> = {
     radiusKm: 20,
     severity: 'HIGH',
     affectedCount: 8700,
-    description: 'Magnitude 5.8 seismic event with structural fissures and secondary aftershocks.',
-    evacuationDirective: 'Move residents out of compromised multi-story structures to open sports complexes.'
+    description: 'Magnitude 5.8 seismic event with structural fissures and secondary aftershocks recorded at depth of 12km.',
+    evacuationDirective: 'Move residents out of compromised multi-story structures to open sports complexes (S-03 Tambaram, S-01 Open Pavilion).'
   },
   wildfire: {
     id: 'INC-FIRE-01',
@@ -69,7 +70,7 @@ export const INCIDENT_DATABASE: Record<string, IncidentLocation> = {
     severity: 'MODERATE',
     affectedCount: 1800,
     description: 'Rapidly spreading brush fire advancing toward residential peripheries. Current containment at 42%.',
-    evacuationDirective: 'Downwind residential zones must evacuate via southern scenic bypass.'
+    evacuationDirective: 'Downwind residential zones must evacuate immediately via southern scenic bypass towards municipal relief camps.'
   },
   landslide: {
     id: 'INC-SLIDE-01',
@@ -81,7 +82,7 @@ export const INCIDENT_DATABASE: Record<string, IncidentLocation> = {
     severity: 'HIGH',
     affectedCount: 3200,
     description: 'Multiple slope collapses blocking 3 primary arterial evacuation roads in high-elevation passes.',
-    evacuationDirective: 'Aviation emergency extraction prioritized; ground convoys restricted to cleared valley routes.'
+    evacuationDirective: 'Aviation emergency extraction prioritized; ground convoys restricted to cleared valley routes only.'
   }
 }
 
@@ -138,28 +139,28 @@ export const SHELTER_DATABASE: Record<string, any> = {
     lat: 12.9686,
     lng: 80.1529,
     capacity: 600,
-    occupancy: 180,
-    available: 420,
+    occupancy: 190,
+    available: 410,
     hasMedical: true,
     isAccessible: true,
     risk: 0.10,
     status: 'OPERATIONAL',
-    contact: 'Dr. Priya Nair (+91-9876543213)'
+    contact: 'K. Rajan (+91-9876543213)'
   },
   's-05': {
     id: 'S-05',
-    name: 'Municipal High School Camp',
-    address: 'Chromepet, Chennai',
-    lat: 12.9516,
-    lng: 80.1462,
+    name: 'Red Hills Shelter',
+    address: 'Red Hills, Chennai',
+    lat: 13.2000,
+    lng: 80.3000,
     capacity: 400,
     occupancy: 390,
     available: 10,
-    hasMedical: false,
+    hasMedical: true,
     isAccessible: false,
-    risk: 0.18,
-    status: 'OPERATIONAL',
-    contact: 'Murugan S (+91-9876543214)'
+    risk: 0.06,
+    status: 'OPERATIONAL (97.5% FULL)',
+    contact: 'M. Senthil (+91-9876543214)'
   },
   's-06': {
     id: 'S-06',
@@ -173,28 +174,28 @@ export const SHELTER_DATABASE: Record<string, any> = {
     hasMedical: true,
     isAccessible: true,
     risk: 0.05,
-    status: 'OPERATIONAL (LARGEST CAPACITY)',
+    status: 'OPERATIONAL (SAFEST FACILITY)',
     contact: 'Major Krishnan (+91-9876543215)'
   },
   's-07': {
     id: 'S-07',
-    name: 'Poonamallee Convention Hall',
+    name: 'Poonamallee Community Hall',
     address: 'Poonamallee, Chennai',
-    lat: 13.0469,
-    lng: 80.0974,
+    lat: 13.0489,
+    lng: 80.0825,
     capacity: 350,
-    occupancy: 0,
-    available: 350,
+    occupancy: 210,
+    available: 140,
     hasMedical: false,
     isAccessible: true,
     risk: 0.30,
-    status: 'OPERATIONAL',
-    contact: 'Selvam P (+91-9876543216)'
+    status: 'OPERATIONAL (AUXILIARY POWER)',
+    contact: 'T. Murugan (+91-9876543216)'
   },
   's-08': {
     id: 'S-08',
-    name: 'Coastal Road Damaged Shelter',
-    address: 'Marina Beach Road',
+    name: 'Coastal Road Shelter',
+    address: 'Besant Nagar Coastal Road, Chennai',
     lat: 13.0592,
     lng: 80.2804,
     capacity: 300,
@@ -203,13 +204,13 @@ export const SHELTER_DATABASE: Record<string, any> = {
     hasMedical: false,
     isAccessible: false,
     risk: 0.95,
-    status: 'DAMAGED / CLOSED',
-    contact: 'DO NOT USE - Structure compromised by storm surge'
+    status: 'DAMAGED / CLOSED (DO NOT USE)',
+    contact: 'DO NOT USE - Foundation breached by tidal surge'
   },
   's-09': {
     id: 'S-09',
     name: 'Sriperumbudur Mega Camp',
-    address: 'Sriperumbudur, TN',
+    address: 'Sriperumbudur, Tamil Nadu',
     lat: 12.9674,
     lng: 79.9479,
     capacity: 3000,
@@ -219,7 +220,7 @@ export const SHELTER_DATABASE: Record<string, any> = {
     isAccessible: true,
     risk: 0.07,
     status: 'OPERATIONAL (MEGA HUB)',
-    contact: 'Collector Office (+91-9876543217)'
+    contact: 'District Collector Office (+91-9876543217)'
   },
   's-10': {
     id: 'S-10',
@@ -248,23 +249,80 @@ export const VICTIM_DATABASE: Record<string, any> = {
   'v-007': { id: 'V-007', name: 'Abdul Hameed', size: 8, loc: 'Washermanpet', cond: 'Kidney disease (dialysis required), 2 elderly', priority: 'CRITICAL' },
   'v-008': { id: 'V-008', name: 'Saranya Murugan', size: 3, loc: 'Porur', cond: 'Mobility impaired, walker required', priority: 'HIGH' },
   'v-009': { id: 'V-009', name: 'Thomas Fernandez', size: 5, loc: 'Perambur', cond: 'None', priority: 'LOW' },
-  'v-010': { id: 'V-010', name: 'Kamala Bai', size: 1, loc: 'Triplicane', cond: 'Post-surgery recovery, medical bed essential', priority: 'CRITICAL' },
+  'v-010': { id: 'V-010', name: 'Kamala Bai', size: 1, loc: 'Triplicane', cond: 'Post-surgery recovery, specialized medical bed essential', priority: 'CRITICAL' },
   'v-011': { id: 'V-011', name: 'Venkatesan R', size: 4, loc: 'Guindy', cond: 'None', priority: 'MEDIUM' },
   'v-012': { id: 'V-012', name: 'Fatima Begum', size: 9, loc: 'Pulianthope', cond: 'Pregnancy (8 months), 1 elderly, 4 children', priority: 'CRITICAL' }
 }
 
+export const EMERGENCY_CONTACTS = [
+  { name: 'National Emergency Number', number: '112' },
+  { name: 'NDRF Disaster Helpline', number: '1078' },
+  { name: 'State Emergency Operation Center (SEOC)', number: '1070' },
+  { name: 'District Disaster Management (DDMA)', number: '1077' },
+  { name: 'Ambulance Emergency', number: '108' },
+  { name: 'Police Control Room', number: '100' },
+  { name: 'Fire & Rescue Services', number: '101' },
+  { name: 'Coastal Security Guard', number: '1093' },
+]
+
 /**
- * Precision Query Resolver: Answers EXACTLY what was asked with zero irrelevant filler.
+ * Intelligent Precision Query Engine:
+ * Answers EXACTLY what was asked, resolves typos/synonyms, and delivers interactive map cards.
  */
 export function queryRescueBot(prompt: string): BotAnswer {
   const p = prompt.trim().toLowerCase()
 
-  // 1. Specific Shelter Search (e.g. S-01, S-04, Gandhi, Army, Mylapore)
+  // 1. GREETING & INTRO
+  if (/^(hi|hello|hey|greetings|who are you|what can you do|help|start)\b/i.test(p)) {
+    return {
+      text: `👋 **Hello, I am RescueBot AI** — your real-time Emergency Response & Shelter Allocation Assistant.\n\nI am synchronized with **5 disaster monitoring zones**, **10 regional shelters**, and **12 victim registries**.\n\nHere is how I can assist you right now:\n1. 🗺️ **Incident Maps:** Ask *"Show flood map"*, *"Where is the cyclone?"*, or *"Show map"*\n2. 🛡️ **Shelter Intelligence:** Ask *"Which is the safest shelter?"*, *"Tell me about S-06"*, or *"Shelters with medical"*\n3. ⚠️ **Disaster Telemetry:** Ask *"Cyclone status"*, *"Earthquake in Coimbatore"*, or *"Current flood situation"*\n4. 📋 **Victim Support:** Ask *"Who is V-003?"*, *"Critical victims"*, or *"Dialysis patient shelters"*\n5. 📞 **Emergency Contacts:** Ask *"Emergency numbers"* or *"Call NDRF"*`,
+      sources: [{ id: 'SYS', name: 'RescueBot AI Core' }],
+      suggestedQuestions: [
+        'Show map for Chennai flood',
+        'Which shelter is the safest?',
+        'List all medical shelters',
+        'Show emergency phone numbers'
+      ]
+    }
+  }
+
+  // 2. EMERGENCY HELPLINES / CONTACT NUMBERS
+  if (p.includes('contact') || p.includes('phone') || p.includes('helpline') || p.includes('call') || p.includes('number') || p.includes('ndrf') || p.includes('police') || p.includes('ambulance') || p.includes('fire')) {
+    const list = EMERGENCY_CONTACTS.map(c => `• **${c.name}:** \`${c.number}\``).join('\n')
+    return {
+      text: `🚨 **Official 24/7 Emergency Hotlines & Helplines:**\n\n${list}\n\n*All lines are toll-free and continuously monitored by disaster coordination command.*`,
+      sources: [{ id: 'TEL', name: 'National Emergency Directory' }],
+      suggestedQuestions: ['Where is the nearest shelter?', 'Show flood map', 'Safest shelter available']
+    }
+  }
+
+  // 3. EVACUATION GUIDANCE / WHERE SHOULD I GO
+  if (p.includes('where should i go') || p.includes('where to go') || p.includes('evacuate') || p.includes('nearest shelter') || p.includes('escape') || p.includes('safe place') || p.includes('how to evacuate')) {
+    const safest = SHELTER_DATABASE['s-06']
+    const mega = SHELTER_DATABASE['s-09']
+    return {
+      text: `🚨 **EMERGENCY EVACUATION DIRECTIVE:**\n\n1. **Primary Inland Safe Haven:** **${safest.name} (${safest.id})**\n   - **Location:** ${safest.address}\n   - **Available Space:** **${safest.available} beds open** (Risk: 5%)\n   - **Medical Facilities:** Full armed forces military clinic on-site\n   - **Contact:** ${safest.contact}\n\n2. **Secondary Mega Hub:** **${mega.name} (${mega.id})**\n   - **Location:** ${mega.address}\n   - **Capacity:** **${mega.available} beds available**\n\n⚠️ **CRITICAL WARNING:** Coastal Road Shelter (**S-08**) is **DAMAGED and CLOSED**. Do NOT proceed along coastal routes. Use inland bypass via Poonamallee Highway.`,
+      sources: [{ id: safest.id, name: safest.name }, { id: mega.id, name: mega.name }],
+      incidentMap: {
+        id: safest.id,
+        name: safest.name,
+        type: 'shelter',
+        lat: safest.lat,
+        lng: safest.lng,
+        radiusKm: 3,
+        severity: 'LOW',
+        description: `${safest.name} (${safest.address}) - Armed forces operational base. Lowest hazard risk.`
+      },
+      suggestedQuestions: ['Show map for flood', 'Tell me about S-09', 'Which shelters have medical?']
+    }
+  }
+
+  // 4. SPECIFIC SHELTER SEARCH (S-01 to S-10, or name)
   for (const [key, s] of Object.entries(SHELTER_DATABASE)) {
     if (p.includes(key) || p.includes(s.name.toLowerCase()) || (p.includes('shelter') && p.includes(s.id.toLowerCase()))) {
       const isDamaged = s.status.includes('DAMAGED')
       return {
-        text: `**${s.name} (${s.id})**\n- **Status:** ${s.status}\n- **Capacity:** ${s.occupancy} occupied / ${s.capacity} total (**${s.available} spaces available**)\n- **Medical Facility:** ${s.hasMedical ? '✅ Yes (Equipped)' : '❌ No'}\n- **Wheelchair Accessible:** ${s.isAccessible ? '✅ Yes' : '❌ No'}\n- **Risk Score:** ${s.risk} (${isDamaged ? 'CRITICAL UNSAFE' : 'Safe'})\n- **Address:** ${s.address}\n- **Contact:** ${s.contact}`,
+        text: `🏠 **${s.name} (${s.id})**\n- **Status:** **${s.status}**\n- **Available Spaces:** **${s.available} open** (${s.occupancy}/${s.capacity} occupied)\n- **Medical Facility:** ${s.hasMedical ? '✅ Equipped with clinic & triage' : '❌ No medical facility'}\n- **Wheelchair Accessible:** ${s.isAccessible ? '✅ Full ramp & ground access' : '❌ Multi-step access only'}\n- **Hazard Risk Score:** **${s.risk}** (${isDamaged ? 'CRITICAL - STRUCTURALLY COMPROMISED' : s.risk < 0.1 ? 'VERY SAFE' : 'MODERATE RISK'})\n- **Location:** ${s.address}\n- **Direct Contact:** ${s.contact}`,
         sources: [{ id: s.id, name: s.name }],
         incidentMap: {
           id: s.id,
@@ -274,59 +332,97 @@ export function queryRescueBot(prompt: string): BotAnswer {
           lng: s.lng,
           radiusKm: 2,
           severity: isDamaged ? 'CRITICAL' : 'LOW',
-          description: `${s.name} (${s.address}) - ${s.available} spaces available.`
-        }
+          description: `${s.name} (${s.address}) - ${s.available} spaces available. Risk: ${s.risk}.`
+        },
+        suggestedQuestions: ['Which shelter is the safest?', 'Show all medical shelters', 'Open full disaster map']
       }
     }
   }
 
-  // 2. Specific Disaster Incidents (Flood, Cyclone, Earthquake, Wildfire, Landslide)
+  // 5. ALL SHELTERS OVERVIEW / LIST
+  if (p.includes('all shelter') || p.includes('list shelter') || p.includes('show shelter') || p.includes('shelters list')) {
+    const list = Object.values(SHELTER_DATABASE).map(s =>
+      `• **${s.id} - ${s.name}:** ${s.available} free / ${s.capacity} cap | Medical: ${s.hasMedical ? '✅' : '❌'} | Status: ${s.status}`
+    ).join('\n')
+    return {
+      text: `📋 **Complete Regional Shelter Registry (10 Shelters):**\n\n${list}\n\n*Total available spaces across network: **6,570 beds**.*`,
+      sources: Object.values(SHELTER_DATABASE).map(s => ({ id: s.id, name: s.name })),
+      suggestedQuestions: ['Tell me about S-06', 'Which shelter is damaged?', 'Show map for cyclone']
+    }
+  }
+
+  // 6. SPECIFIC DISASTER INCIDENTS (Flood, Cyclone, Earthquake, Wildfire, Landslide)
   for (const [hazard, inc] of Object.entries(INCIDENT_DATABASE)) {
-    if (p.includes(hazard) || p.includes(inc.name.toLowerCase())) {
+    if (p.includes(hazard) || p.includes(inc.name.toLowerCase()) || (hazard === 'flood' && (p.includes('flod') || p.includes('water') || p.includes('river') || p.includes('rain'))) || (hazard === 'cyclone' && (p.includes('cycone') || p.includes('storm') || p.includes('wind')))) {
       return {
-        text: `⚠️ **${inc.name}**\n- **Hazard Type:** ${inc.type.toUpperCase()}\n- **Severity Level:** **${inc.severity}**\n- **Estimated Affected Population:** **${inc.affectedCount?.toLocaleString()} people**\n- **Danger Zone Radius:** ${inc.radiusKm} km around [${inc.lat}, ${inc.lng}]\n- **Situation:** ${inc.description}\n- **Evacuation Directive:** ${inc.evacuationDirective}`,
+        text: `⚠️ **${inc.name}**\n- **Hazard Classification:** **${inc.type.toUpperCase()}**\n- **Severity Rating:** **${inc.severity}**\n- **Evacuation Population at Risk:** **${inc.affectedCount?.toLocaleString()} people**\n- **Danger Perimeter:** **${inc.radiusKm} km radius** around [${inc.lat}°N, ${inc.lng}°E]\n- **Current Situation:** ${inc.description}\n- **Immediate Directive:** **${inc.evacuationDirective}**`,
         sources: [{ id: inc.id, name: inc.name }],
-        incidentMap: inc
+        incidentMap: inc,
+        suggestedQuestions: [
+          `Where to evacuate for ${inc.type}?`,
+          'Which shelter has medical beds?',
+          'Open disaster map'
+        ]
       }
     }
   }
 
-  // 3. Map requests (e.g. "show map", "map for incident", "where is the incident", "location")
-  if (p.includes('map') || p.includes('location') || p.includes('where is') || p.includes('locate') || p.includes('coordinates')) {
-    // Default to the highest priority emergency incident: Chennai Coastal Flood
+  // 7. MAP REQUESTS (e.g. "show map", "map for incident", "where is the incident", "location")
+  if (p.includes('map') || p.includes('location') || p.includes('where is') || p.includes('locate') || p.includes('coordinates') || p.includes('satellite')) {
     const topIncident = INCIDENT_DATABASE.flood
     return {
-      text: `🗺️ **Active Emergency Incident Map Coordinates:**\n\n- **Epicenter:** ${topIncident.name} at **[${topIncident.lat}, ${topIncident.lng}]**\n- **Danger Radius:** ${topIncident.radiusKm} km\n- **Severity:** **${topIncident.severity}** (${topIncident.affectedCount?.toLocaleString()} affected)\n\n*Interactive map preview loaded below. Click "View on Live Map" to inspect in the full satellite view.*`,
+      text: `🗺️ **Active Emergency Incident Geospatial Telemetry:**\n\n- **Primary Epicenter:** ${topIncident.name}\n- **Coordinates:** **${topIncident.lat}°N, ${topIncident.lng}°E**\n- **Perimeter Radius:** **${topIncident.radiusKm} km danger circle**\n- **Severity:** **${topIncident.severity}** (${topIncident.affectedCount?.toLocaleString()} residents affected)\n\n*Interactive high-resolution map loaded below. You can zoom, pan, and toggle full-screen view.*`,
       sources: [{ id: topIncident.id, name: topIncident.name }],
-      incidentMap: topIncident
+      incidentMap: topIncident,
+      suggestedQuestions: [
+        'Show cyclone map',
+        'Show earthquake zone in Coimbatore',
+        'Safest shelter available'
+      ]
     }
   }
 
-  // 4. Specific Victim Record Search (e.g. V-001, V-003, Fatima, Ibrahim)
+  // 8. SPECIFIC VICTIM RECORD SEARCH (V-001 to V-012, or victim name)
   for (const [key, v] of Object.entries(VICTIM_DATABASE)) {
     if (p.includes(key) || p.includes(v.name.toLowerCase())) {
       return {
-        text: `📋 **Victim Record: ${v.name} (${v.id})**\n- **Family Size:** ${v.size} members\n- **Current Location:** ${v.loc}\n- **Medical / Accessibility Needs:** ${v.cond}\n- **Priority Rating:** **${v.priority}**`,
-        sources: [{ id: v.id, name: v.name }]
+        text: `📋 **Victim Profile: ${v.name} (${v.id})**\n- **Family Group Size:** **${v.size} members**\n- **Registered Location:** ${v.loc}\n- **Medical / Mobility Requirements:** ${v.cond}\n- **Triage Priority:** **${v.priority}**\n- **Recommended Allocation:** ${
+          v.priority === 'CRITICAL' || v.cond.includes('Wheelchair') || v.cond.includes('Heart') || v.cond.includes('Kidney')
+            ? 'Must be allocated to **S-04 DRDA Alpha** or **S-06 Army Center** (medical & wheelchair accessible).'
+            : 'Standard operational shelter (S-01, S-03, or S-09).'
+        }`,
+        sources: [{ id: v.id, name: v.name }],
+        suggestedQuestions: ['List all critical victims', 'Show medical shelters', 'Run CSP allocation']
       }
     }
   }
 
-  // 5. Medical facilities query
-  if (p.includes('medical') || p.includes('hospital') || p.includes('doctor')) {
+  // 9. MEDICAL FACILITIES & SPECIAL NEEDS
+  if (p.includes('medical') || p.includes('hospital') || p.includes('doctor') || p.includes('dialysis') || p.includes('oxygen') || p.includes('wheelchair') || p.includes('pregnant')) {
     const medShelters = Object.values(SHELTER_DATABASE).filter(s => s.hasMedical && !s.status.includes('DAMAGED'))
-    const list = medShelters.map(s => `• **${s.name} (${s.id})**: ${s.available} free spaces available (Contact: ${s.contact})`).join('\n')
+    const list = medShelters.map(s => `• **${s.name} (${s.id}):** ${s.available} spaces available | Accessible: ${s.isAccessible ? '✅' : '❌'} (Contact: ${s.contact})`).join('\n')
     return {
-      text: `🏥 **Operational Shelters with Medical Facilities (${medShelters.length} found):**\n\n${list}`,
-      sources: medShelters.map(s => ({ id: s.id, name: s.name }))
+      text: `🏥 **Operational Shelters with Certified Medical Clinics (${medShelters.length} facilities ready):**\n\n${list}\n\n*Note: Critical patients like V-007 (Dialysis) and V-012 (Late pregnancy) are prioritized for S-04 and S-06.*`,
+      sources: medShelters.map(s => ({ id: s.id, name: s.name })),
+      incidentMap: {
+        id: 'S-06',
+        name: 'Army Relief Center Bravo (Main Medical Base)',
+        type: 'shelter',
+        lat: 13.1143,
+        lng: 80.0982,
+        radiusKm: 3,
+        severity: 'LOW',
+        description: 'Army Medical Corps deployed with emergency surgical & triage units.'
+      },
+      suggestedQuestions: ['Who is V-007?', 'Tell me about S-04', 'Show map']
     }
   }
 
-  // 6. Safest shelter query
-  if (p.includes('safe') || p.includes('safest') || p.includes('best shelter')) {
-    const s = SHELTER_DATABASE['s-06'] // Army Relief Center has risk 0.05
+  // 10. SAFEST SHELTER QUERY
+  if (p.includes('safest') || p.includes('safe shelter') || p.includes('best shelter') || p.includes('lowest risk')) {
+    const s = SHELTER_DATABASE['s-06']
     return {
-      text: `🛡️ **Safest Available Shelter:**\n\n**${s.name} (${s.id})**\n- **Risk Score:** **${s.risk}** (Lowest risk in the entire region)\n- **Available Capacity:** **${s.available} spaces** (out of ${s.capacity})\n- **Medical Support:** ✅ Yes (Armed forces medical corps on-site)\n- **Accessibility:** ✅ Yes\n- **Location:** ${s.address}\n- **Contact:** ${s.contact}`,
+      text: `🛡️ **Safest Regional Emergency Shelter Facility:**\n\n**${s.name} (${s.id})**\n- **Hazard Risk Score:** **0.05 (Lowest risk in the entire state)**\n- **Available Space:** **${s.available} beds open** (Total Capacity: ${s.capacity})\n- **Armed Forces Clinical Corps:** ✅ Complete medical & triage capability\n- **Accessibility:** ✅ Full wheelchair ramps & ground floor halls\n- **Elevation:** High inland plateau unaffected by coastal surges\n- **Location:** ${s.address}\n- **Direct Contact:** ${s.contact}`,
       sources: [{ id: s.id, name: s.name }],
       incidentMap: {
         id: s.id,
@@ -336,60 +432,90 @@ export function queryRescueBot(prompt: string): BotAnswer {
         lng: s.lng,
         radiusKm: 3,
         severity: 'LOW',
-        description: `${s.name} - Safest operational emergency facility.`
-      }
+        description: `${s.name} - Armed forces regional command with 1,350 available beds.`
+      },
+      suggestedQuestions: ['How to reach S-06?', 'Which shelter is damaged?', 'Show cyclone alert']
     }
   }
 
-  // 7. Overcrowded or Full Shelters
-  if (p.includes('overcrowd') || p.includes('full') || p.includes('busy')) {
+  // 11. DAMAGED / CLOSED / HIGH RISK SHELTERS
+  if (p.includes('damaged') || p.includes('closed') || p.includes('unsafe') || p.includes('danger shelter') || p.includes('high risk')) {
+    const s8 = SHELTER_DATABASE['s-08']
     return {
-      text: `⚠️ **Overcrowded Shelters Near Maximum Capacity:**\n\n• **St. Thomas School Shelter (S-02):** 96% full (480 / 500 occupied — **only 20 spaces left**).\n• **Municipal High School Camp (S-05):** 97.5% full (390 / 400 occupied — **only 10 spaces left**).\n\n*Recommendation: Reroute incoming evacuees to Army Center (S-06) or Gandhi Center (S-01).*`,
-      sources: [{ id: 'S-02', name: 'St. Thomas' }, { id: 'S-05', name: 'Municipal Camp' }]
+      text: `🚨 **HAZARD ALERT: Unsafe & Damaged Shelters:**\n\n• **${s8.name} (${s8.id}):** **Risk Score: 0.95 (CRITICAL)**\n  - **Status:** **DAMAGED & PERMANENTLY CLOSED**\n  - **Cause:** Tidal surge from Bay of Bengal breached ground foundations.\n  - **Directive:** **STRICTLY PROHIBITED FROM ALLOCATION.** Evacuation convoys must bypass.\n\n• **Poonamallee Hall (S-07):** Risk 0.30 — Operating on emergency generator power. Limited water reserve.`,
+      sources: [{ id: 'S-08', name: s8.name }],
+      incidentMap: {
+        id: s8.id,
+        name: s8.name,
+        type: 'shelter',
+        lat: s8.lat,
+        lng: s8.lng,
+        radiusKm: 2,
+        severity: 'CRITICAL',
+        description: 'Coastal Road Shelter is structurally compromised. DO NOT ENTER.'
+      },
+      suggestedQuestions: ['Which shelter is safest?', 'Where should I go?', 'Show flood map']
     }
   }
 
-  // 8. Capacity / Occupancy Numbers
-  if (p.includes('capacity') || p.includes('occupancy') || p.includes('available space') || p.includes('how many space')) {
+  // 12. OVERCROWDED / FULL SHELTERS
+  if (p.includes('overcrowd') || p.includes('full') || p.includes('busy') || p.includes('almost full')) {
     return {
-      text: `📦 **Shelter Capacity Status:**\n- **Total Regional Capacity:** 9,400 spaces\n- **Current Occupancy:** 2,830 people\n- **Total Available Capacity:** **6,570 open spaces** across 9 operational shelters\n- **Overall Occupancy Rate:** 30.1%`,
-      sources: [{ id: 'SYS', name: 'Live Capacity Telemetry' }]
+      text: `⚠️ **Overcrowded Shelters Near Capacity Threshold:**\n\n• **St. Thomas School Shelter (S-02):** **96% Full** (480 / 500 occupied — **only 20 beds left**).\n• **Red Hills Shelter (S-05):** **97.5% Full** (390 / 400 occupied — **only 10 beds left**).\n\n*Action Directive: Reroute incoming evacuees immediately to Army Center Bravo (S-06) or Sriperumbudur Mega Camp (S-09) which have over 3,550 open spaces combined.*`,
+      sources: [{ id: 'S-02', name: 'St. Thomas' }, { id: 'S-05', name: 'Red Hills' }],
+      suggestedQuestions: ['Tell me about S-06', 'Show Sriperumbudur Mega Camp', 'Run CSP allocation']
     }
   }
 
-  // 9. Total victims / vulnerable population
-  if (p.includes('how many victim') || p.includes('registered') || p.includes('total victim') || p.includes('critical victim')) {
+  // 13. CAPACITY & OCCUPANCY NUMBERS
+  if (p.includes('capacity') || p.includes('occupancy') || p.includes('how many space') || p.includes('total bed')) {
     return {
-      text: `👥 **Victim Registration Telemetry:**\n- **Registered Groups:** 12 family units (47 people total)\n- **Critical Priority Victims:** 4 groups (**V-003, V-007, V-010, V-012**)\n- **Special Medical Needs:** 5 groups requiring urgent clinical accommodation\n- **Mobility Impaired:** 3 groups requiring wheelchair / stretcher accessibility`,
-      sources: [{ id: 'REG', name: 'Victim Database' }]
+      text: `📊 **Regional Shelter Capacity Telemetry:**\n- **Total Network Capacity:** 9,400 beds\n- **Current Occupancy:** 2,830 evacuees\n- **Available Beds Right Now:** **6,570 open spaces** across 9 operational facilities\n- **Network Occupancy Rate:** 30.1% (Healthy operational buffer)`,
+      sources: [{ id: 'SYS', name: 'Live Capacity Telemetry' }],
+      suggestedQuestions: ['Which shelter is safest?', 'Show all shelters', 'Show medical shelters']
     }
   }
 
-  // 10. Algorithm (CSP, Backtracking, Bayesian)
-  if (p.includes('csp') || p.includes('algorithm') || p.includes('bayesian') || p.includes('backtracking')) {
+  // 14. VICTIM REGISTRY TELEMETRY
+  if (p.includes('victim') || p.includes('registered') || p.includes('how many people') || p.includes('critical')) {
+    return {
+      text: `👥 **Victim Registry Status:**\n- **Total Registered Groups:** 12 family units (47 individuals)\n- **Critical Triage Rating:** 4 priority groups (**V-003, V-007, V-010, V-012**)\n- **Emergency Medical Care Needed:** 5 families (dialysis, cardiac, asthma, late pregnancy)\n- **Wheelchair Accessibility Required:** 3 family units`,
+      sources: [{ id: 'REG', name: 'Victim Registry DB' }],
+      suggestedQuestions: ['Who is V-003?', 'Who is V-007?', 'Show medical shelters']
+    }
+  }
+
+  // 15. ALGORITHMS (CSP, Backtracking, Bayesian, Multi-Agent)
+  if (p.includes('algorithm') || p.includes('csp') || p.includes('bayesian') || p.includes('backtracking') || p.includes('multi-agent') || p.includes('agent')) {
     if (p.includes('bayesian')) {
       return {
-        text: `📈 **Bayesian Reasoning Engine:**\nCalculates $P(\\text{Safe} \\mid \\text{Evidence})$ using Bayes' theorem. It weighs prior safety against likelihood factors (Power status, Communication lines, Hazard proximity) to produce posterior safety probabilities with confidence intervals and uncertainty bounds.`,
-        sources: [{ id: 'ALG', name: 'Bayesian Net Spec' }]
+        text: `📈 **Bayesian Probabilistic Reasoning:**\nComputes posterior safety probability $P(\\text{Safe} \\mid \\text{Evidence})$ combining historical disaster survivability with real-time sensor streams (power grid integrity, communication link health, flood depth sensors). Includes 95% Bayesian credible intervals.`,
+        sources: [{ id: 'ALG', name: 'Bayesian Engine' }]
+      }
+    }
+    if (p.includes('agent')) {
+      return {
+        text: `🤖 **Multi-Agent Coordination Pipeline:**\n6 autonomous software agents collaborate sequentially:\n1. **Location Agent:** Computes road travel matrices.\n2. **Safety Agent:** Assesses hazard breach radii.\n3. **Shelter Agent:** Monitors real-time bed inventories.\n4. **Medical Agent:** Matches clinical needs to facilities.\n5. **Allocation Agent:** Executes CSP optimization.\n6. **Coordinator Agent:** Resolves cross-agent conflicts.`,
+        sources: [{ id: 'MAS', name: 'Multi-Agent Pipeline' }]
       }
     }
     return {
-      text: `⚙️ **Constraint Satisfaction Problem (CSP) Engine:**\n1. **Hard Constraints:** Enforces strict capacity caps, medical facility necessity, wheelchair accessibility, and strictly excludes damaged shelters (S-08).\n2. **Objective Scoring:** Weighs Safety (35%), Travel Distance (25%), Overcrowding Avoidance (20%), Medical Match (15%), and Priority Vulnerability (5%).`,
-      sources: [{ id: 'ALG', name: 'CSP Engine Spec' }]
+      text: `⚙️ **Constraint Satisfaction Problem (CSP) Engine:**\n1. **Hard Bounds:** Capacity caps, medical prerequisite enforcement, wheelchair accessibility, and strict exclusion of damaged facilities (S-08).\n2. **Optimization Function:** Computes multi-objective score:\n$$\\text{Score} = 0.35\\cdot\\text{Safety} + 0.25\\cdot\\text{Distance} + 0.20\\cdot\\text{Overcrowding} + 0.15\\cdot\\text{Medical} + 0.05\\cdot\\text{Vulnerability}$$`,
+      sources: [{ id: 'CSP', name: 'CSP Engine Specification' }]
     }
   }
 
-  // 11. High Risk / Damaged shelters
-  if (p.includes('highest risk') || p.includes('damaged') || p.includes('closed') || p.includes('unsafe')) {
-    return {
-      text: `🚨 **Unsafe & High-Risk Shelters:**\n\n• **S-08 (Coastal Road Shelter):** **Risk 0.95 (CRITICAL)**. Status: **DAMAGED**. Coastal storm surge breached structural foundation. *Strictly prohibited from allocation.*\n• **S-07 (Poonamallee Hall):** Risk 0.30. Operational on auxiliary power only.`,
-      sources: [{ id: 'S-08', name: 'Damaged Shelter' }]
-    }
-  }
-
-  // Default concise direct summary
+  // DEFAULT CONCISE PRECISION SUMMARY
+  const defaultTop = INCIDENT_DATABASE.flood
   return {
-    text: `I have searched the emergency database for "${prompt}".\n\n- **Active Incidents:** 5 declared zones (Flood, Cyclone, Earthquake, Wildfire, Landslide).\n- **Shelters:** 9 operational with **6,570 spaces available**.\n- **Safest Facility:** Army Relief Center S-06 (Risk 0.05, 1,350 available spaces).\n\n*Ask specifically: "Show map for flood", "Tell me about S-04", "Which shelters have medical?", or "Who is V-003?"*`,
-    sources: [{ id: 'SYS', name: 'Emergency Core' }]
+    text: `I evaluated your request: "${prompt}".\n\n- **Active Hazard Incidents:** 5 declared zones (Flood, Cyclone, Earthquake, Wildfire, Landslide).\n- **Regional Shelter Network:** 9 operational centers with **6,570 available beds**.\n- **Recommended Haven:** Army Relief Center Bravo S-06 (Risk: 0.05, 1,350 spaces).\n- **Prohibited Facility:** Coastal Road Shelter S-08 (Damaged by surge).\n\n*Click one of the suggested emergency queries below for direct telemetry:*`,
+    sources: [{ id: 'SYS', name: 'Emergency Operations Core' }],
+    incidentMap: defaultTop,
+    suggestedQuestions: [
+      'Show map for Chennai flood',
+      'Which is the safest shelter?',
+      'Show all medical shelters',
+      'Show emergency phone numbers'
+    ]
   }
 }

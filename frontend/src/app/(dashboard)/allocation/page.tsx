@@ -295,8 +295,8 @@ export default function AllocationPage() {
                         })}
                       </div>
 
-                      {/* Embedded OSM map */}
-                      <div className="relative h-56">
+                      {/* Embedded OSM map with Full Height View */}
+                      <div className="relative h-80 md:h-96 w-full">
                         <iframe
                           src="https://www.openstreetmap.org/export/embed.html?bbox=79.7000,12.7000,80.5000,13.3000&layer=mapnik"
                           className="w-full h-full border-0"
