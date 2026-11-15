@@ -5,6 +5,14 @@
 [![Frontend](https://img.shields.io/badge/Frontend-Next.js%2014%20%7C%20TypeScript%20%7C%20Tailwind-blueviolet.svg)](https://github.com)
 [![Backend](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%20%7C%20SQLAlchemy-009688.svg)](https://github.com)
 
+
+> **Academic Capstone Project | Department of Computer Science & Engineering**  
+> **Student Author:** **Kovuru Rajoob** (Reg. No: 12506537, Roll: 23, B.Tech CSE - AIML)  
+> **Project Supervisor:** **Ayushi Bhakuni** (Assistant Professor, Dept. of CSE)  
+> **Institution:** Lovely Professional University, Phagwara  
+> **Course Code:** CSE-276 Capstone Project  
+> **Repository:** [rajoob-Ai/RESCUE-AI-AI-Based-Disaster-Shelter-Allocation-Emergency-Response-System](https://github.com/rajoob-Ai/RESCUE-AI-AI-Based-Disaster-Shelter-Allocation-Emergency-Response-System)
+
 **RESCUE AI** is an intelligent disaster-shelter allocation platform engineered for emergency management commanders. It coordinates the safe, optimal, and explainable allocation of displaced populations into emergency shelters while adhering to strict safety, capacity, medical, and accessibility constraints.
 
 ---
@@ -150,3 +158,35 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - **Safety Over 100% Allocation**: The engine never assigns victims to a damaged or unsafe shelter simply to reach full assignment quotas.
 - **Explainability**: Every allocation recommendation includes a traceable score breakdown (Safety %, Distance in km, Medical Facility Match).
 - **Human Approval**: The system functions strictly as a decision-support platform requiring officer confirmation for emergency dispatch changes.
+
+---
+
+## 📦 Academic Deliverables & Repository Structure (Whiteboard Specification)
+
+In accordance with academic capstone submission guidelines, this repository provides:
+
+1. **Project**: Production disaster management & shelter allocation platform.
+2. **Code**: 
+   - rontend/: Next.js 14 App Router, TypeScript, Tailwind CSS, Leaflet.js (15 routes).
+   - ackend/: FastAPI, SQLAlchemy, Google OR-Tools CP-SAT, Multi-Agent Orchestrator.
+3. **README.md**: Complete technical documentation, setup instructions, and architecture guide.
+4. **requirements.txt**: Root-level and backend dependencies specification.
+5. **PPT (Presentation)**:
+   - RESCUE_AI_PRESENTATION.pptx: Native 16:9 widescreen PowerPoint presentation (15 slides).
+   - RESCUE_AI_PRESENTATION.pdf: PDF presentation deck.
+   - RESCUE_AI_PRESENTATION.html: Interactive web presentation.
+6. **Report (Dissertation)**:
+   - RESCUE_AI_PROJECT_REPORT.pdf: University-standard formatted PDF report (Times New Roman 16/14/12pt).
+   - LPU_FINAL_PROJECT_REPORT.html: Formatted HTML report with print-optimized CSS.
+   - FINAL_PROJECT_REPORT.md: Master markdown dissertation.
+   - IEEE_FINAL_REPORT.html: IEEE two-column publication report.
+7. **Folder Structure**: Clean, modular structure without build artifacts or temporary files.
+
+---
+
+## 👥 Authorship & Academic Credits
+
+- **Candidate:** **Kovuru Rajoob** (Registration No: 12506537, Roll: 23)
+- **Faculty Guide:** **Ayushi Bhakuni** (Assistant Professor, Department of Computer Science & Engineering)
+- **Institution:** Lovely Professional University, Phagwara, Punjab
+- **Session:** 2024–2025
