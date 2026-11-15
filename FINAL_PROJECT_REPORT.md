@@ -1,4 +1,4 @@
-# RESCUE AI: AI-POWERED DISASTER SHELTER ALLOCATION & EMERGENCY MANAGEMENT SYSTEM
+﻿# RESCUE AI: AI-POWERED DISASTER SHELTER ALLOCATION & EMERGENCY MANAGEMENT SYSTEM
 ## COMPREHENSIVE FINAL PROJECT DISSERTATION & TECHNICAL REPORT
 ### Prepared in accordance with University Academic Guidelines & Whiteboard Specification
 
@@ -18,11 +18,11 @@
 ========================================================================================================
 
                                              Submitted by:
-                                       JAGADEESH REDDY PUNNATI
+                                       KOVURU RAJOOB
                                     Register / Roll No: 2022-CSE-RESCUE-01
 
                                     Under the Esteemed Guidance of:
-                                       DR. S. RAMACHANDRAN, Ph.D.
+                                       AYUSHI BHAKUNI
                                           Professor & Head,
                                     Department of Computer Science & Engineering
 
@@ -36,7 +36,7 @@
 
 ## CANDIDATE DECLARATION
 
-I, **Jagadeesh Reddy Punnati**, student of Bachelor of Technology in Computer Science & Engineering, hereby declare that the capstone project work entitled **"RESCUE AI: An Intelligent Multi-Agent and Constraint-Optimized Decision Support System for Disaster Shelter Allocation & Emergency Response"** is an authentic record of original engineering design, implementation, and research carried out by me under the supervision of **Dr. S. Ramachandran**, Professor, Department of Computer Science & Engineering.
+I, **KOVURU RAJOOB**, student of Bachelor of Technology in Computer Science & Engineering, hereby declare that the capstone project work entitled **"RESCUE AI: An Intelligent Multi-Agent and Constraint-Optimized Decision Support System for Disaster Shelter Allocation & Emergency Response"** is an authentic record of original engineering design, implementation, and research carried out by me under the supervision of **Ayushi Bhakuni**, Professor, Department of Computer Science & Engineering.
 
 I further declare that:
 1. The empirical results, architectural designs, algorithms, and source code presented in this thesis have been developed independently and have not been submitted to any other University, Institute, or Examining Body for the award of any degree, diploma, or fellowship.
@@ -50,14 +50,14 @@ I further declare that:
 \
 _______________________________________  
 **(Signature of the Candidate)**  
-**JAGADEESH REDDY PUNNATI**  
+**KOVURU RAJOOB**  
 Roll No: 2022-CSE-RESCUE-01  
 
 ---
 
 ## CERTIFICATE OF APPROVAL
 
-This is to certify that the project report entitled **"RESCUE AI: An Intelligent Multi-Agent and Constraint-Optimized Decision Support System for Disaster Shelter Allocation & Emergency Response"** submitted by **Jagadeesh Reddy Punnati** in partial fulfillment of the requirements for the degree of **Bachelor of Technology in Computer Science & Engineering** is a bonafide record of work carried out under our supervision and guidance.
+This is to certify that the project report entitled **"RESCUE AI: An Intelligent Multi-Agent and Constraint-Optimized Decision Support System for Disaster Shelter Allocation & Emergency Response"** submitted by **KOVURU RAJOOB** in partial fulfillment of the requirements for the degree of **Bachelor of Technology in Computer Science & Engineering** is a bonafide record of work carried out under our supervision and guidance.
 
 The project fulfills all academic standards and specifications stipulated by the Departmental Academic Committee and is recommended for oral defense and external evaluation.
 
@@ -65,7 +65,7 @@ The project fulfills all academic standards and specifications stipulated by the
 \
 \
 _________________________________ &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; _________________________________  
-**Dr. S. Ramachandran, Ph.D.** &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; **Head of the Department**  
+**AYUSHI BHAKUNI** &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; **Head of the Department**  
 Project Supervisor & Professor &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; Department of Computer Science & Engineering  
 Department of CSE &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; University Faculty of Engineering  
 
@@ -80,7 +80,7 @@ Department of CSE &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&e
 
 The successful realization of this capstone research project would not have been possible without the invaluable guidance, constructive critique, and technical assistance provided by numerous individuals and organizations.
 
-First and foremost, I express my profound gratitude to my project supervisor, **Dr. S. Ramachandran**, whose incisive feedback on constraint optimization algorithms, multi-agent communication protocols, and mathematical modeling elevated this work from a conceptual software prototype to an enterprise-grade emergency decision support platform. His encouragement during complex phases of geospatial integration and state space pruning was pivotal.
+First and foremost, I express my profound gratitude to my project supervisor, **Ayushi Bhakuni**, whose incisive feedback on constraint optimization algorithms, multi-agent communication protocols, and mathematical modeling elevated this work from a conceptual software prototype to an enterprise-grade emergency decision support platform. His encouragement during complex phases of geospatial integration and state space pruning was pivotal.
 
 I extend my sincere appreciation to the **Head of the Department** and the faculty members of the Department of Computer Science & Engineering for providing the laboratory infrastructure, computational facilities, and continuous academic encouragement.
 
@@ -90,7 +90,7 @@ Finally, I express my heartfelt gratitude to my family and fellow engineering pe
 
 \
 \
-**Jagadeesh Reddy Punnati**
+**KOVURU RAJOOB**
 
 ---
 
@@ -623,8 +623,8 @@ rescue-ai/
 ```
 
 ### Verified Live Production Links:
-* **Live Operational Dashboard:** [https://jagadeeshreddypunnati-sys.github.io/AI-powered-Disaster-Management-Dashboard/](https://jagadeeshreddypunnati-sys.github.io/AI-powered-Disaster-Management-Dashboard/)
-* **Project GitHub Repository:** [https://github.com/jagadeeshreddypunnati-sys/AI-powered-Disaster-Management-Dashboard](https://github.com/jagadeeshreddypunnati-sys/AI-powered-Disaster-Management-Dashboard)
+* **Live Operational Dashboard:** [https://rajoob-ai.github.io/RESCUE-AI-AI-Based-Disaster-Shelter-Allocation-Emergency-Response-System/](https://rajoob-ai.github.io/RESCUE-AI-AI-Based-Disaster-Shelter-Allocation-Emergency-Response-System/)
+* **Project GitHub Repository:** [https://github.com/rajoob-Ai/RESCUE-AI-AI-Based-Disaster-Shelter-Allocation-Emergency-Response-System](https://github.com/rajoob-Ai/RESCUE-AI-AI-Based-Disaster-Shelter-Allocation-Emergency-Response-System)
 * **Backend API Endpoint:** `https://rescue-ai-backend.onrender.com`
 
 ---
@@ -641,3 +641,4 @@ rescue-ai/
 8. **FastAPI Framework.** (2024). *High-Performance Asynchronous Web Framework for Python.* Tiangolo.
 9. **Leaflet.js.** (2024). *An Open-Source JavaScript Library for Mobile-Friendly Interactive Maps.* Vladimir Agafonkin.
 10. **World Health Organization (WHO).** (2023). *Health Cluster Guide: Managing Health Emergencies in Large-Scale Disasters.* Geneva, Switzerland.
+
