@@ -4,10 +4,74 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, Edit2, Trash2, Download, Filter, User, AlertTriangle,
   CheckCircle, Heart, Users, Shield, MapPin, X, Clock, Zap, Building2,
-  ArrowRight, RefreshCw, Check, Sparkles, AlertCircle
+  ArrowRight, RefreshCw, Check, Sparkles, AlertCircle, Compass, BedDouble
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
+
+// ── ACTIVE DISASTER INCIDENTS & HAZARD ZONES ─────────────────
+const DISASTER_EVENTS = [
+  {
+    id: 'CYCLONE_MICHAUNG',
+    name: 'Cyclone Michaung (Cat-4 Flood & Storm Surge)',
+    short_name: 'Cyclone Michaung',
+    type: 'Cyclone / Flood',
+    severity: 'critical',
+    region: 'North Coastal TN & Chennai',
+    icon: '🌀',
+    recommended_shelter_ids: ['S-JN', 'S-TC', 'S-TB', 'S-AV']
+  },
+  {
+    id: 'WAYANAD_LANDSLIDES',
+    name: 'Wayanad Landslides (Chooralmala & Mundakkai)',
+    short_name: 'Wayanad Landslides',
+    type: 'Landslide / Debris',
+    severity: 'critical',
+    region: 'Wayanad District, Kerala',
+    icon: '⛰️',
+    recommended_shelter_ids: ['S-WY']
+  },
+  {
+    id: 'CYCLONE_FENGAL',
+    name: 'Cyclone Fengal Flash Inundation',
+    short_name: 'Cyclone Fengal',
+    type: 'Coastal Inundation',
+    severity: 'high',
+    region: 'Villupuram & Puducherry',
+    icon: '🌊',
+    recommended_shelter_ids: ['S-NR', 'S-TB']
+  },
+  {
+    id: 'CHENNAI_DELUGE',
+    name: 'Chennai Adyar Basin Flash Floods',
+    short_name: 'Chennai Deluge',
+    type: 'Urban Deluge',
+    severity: 'high',
+    region: 'Velachery & Adyar Basin',
+    icon: '🌧️',
+    recommended_shelter_ids: ['S-JN', 'S-TC', 'S-KM', 'S-LC']
+  },
+  {
+    id: 'ENNORE_GAS_OIL',
+    name: 'Ennore Ammonia & Chemical Hazard',
+    short_name: 'Ennore Hazard',
+    type: 'Industrial Hazard',
+    severity: 'medium',
+    region: 'North Chennai Industrial Belt',
+    icon: '☣️',
+    recommended_shelter_ids: ['S-AV', 'S-KM']
+  },
+  {
+    id: 'NILGIRIS_WILDFIRE',
+    name: 'Nilgiris Mudumalai Forest Fire Buffer',
+    short_name: 'Nilgiris Wildfire',
+    type: 'Wildfire',
+    severity: 'medium',
+    region: 'Nilgiris Biosphere',
+    icon: '🔥',
+    recommended_shelter_ids: ['S-WY', 'S-IIT']
+  }
+]
 
 // ── REAL RELIEF SHELTERS NETWORK ─────────────────────────────
 const OPERATIONAL_SHELTERS = [
@@ -169,11 +233,31 @@ function PriorityBadge({ p }: { p: string }) {
   )
 }
 
+function DisasterBadge({ disasterId }: { disasterId: string }) {
+  const d = DISASTER_EVENTS.find(ev => ev.id === disasterId) || {
+    name: disasterId || 'General Disaster',
+    short_name: disasterId || 'General',
+    icon: '⚠️',
+    severity: 'high'
+  }
+  return (
+    <span
+      title={d.name}
+      className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg max-w-[175px] truncate"
+    >
+      <span>{d.icon}</span>
+      <span className="truncate">{d.short_name}</span>
+    </span>
+  )
+}
+
 const EMPTY_FORM = {
   victim_id: '',
   representative_name: '',
   family_size: 1,
   current_location: '',
+  disaster_id: 'CYCLONE_MICHAUNG',
+  disaster_name: 'Cyclone Michaung (Cat-4 Flood & Storm Surge)',
   latitude: '',
   longitude: '',
   medical_conditions: '',
@@ -195,6 +279,7 @@ export default function VictimsPage() {
   const [search, setSearch] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [allocationFilter, setAllocationFilter] = useState('all')
+  const [disasterFilter, setDisasterFilter] = useState('all')
   
   // Registration & Edit Modal state
   const [modal, setModal] = useState(false)
@@ -204,6 +289,11 @@ export default function VictimsPage() {
 
   // Direct Allocation Quick Popover / Modal state for table rows
   const [quickAllocVictim, setQuickAllocVictim] = useState<any>(null)
+
+  // Admin Shelter Allotment Console Drawer/Modal state
+  const [shelterConsoleOpen, setShelterConsoleOpen] = useState(false)
+  const [selectedShelterId, setSelectedShelterId] = useState<string>('S-JN')
+  const [consoleDisasterFilter, setConsoleDisasterFilter] = useState<string>('all')
 
   const load = async () => {
     try {
@@ -230,13 +320,18 @@ export default function VictimsPage() {
       v.representative_name?.toLowerCase().includes(search.toLowerCase()) ||
       v.victim_id?.toLowerCase().includes(search.toLowerCase()) ||
       v.current_location?.toLowerCase().includes(search.toLowerCase()) ||
-      v.medical_conditions?.toLowerCase().includes(search.toLowerCase())
+      v.medical_conditions?.toLowerCase().includes(search.toLowerCase()) ||
+      v.disaster_name?.toLowerCase().includes(search.toLowerCase()) ||
+      v.disaster_id?.toLowerCase().includes(search.toLowerCase())
+    
     const matchPriority = priorityFilter === 'all' || v.priority === priorityFilter
+    const matchDisaster = disasterFilter === 'all' || v.disaster_id === disasterFilter
     const matchAlloc =
       allocationFilter === 'all' ||
       (allocationFilter === 'allocated' && v.is_allocated) ||
       (allocationFilter === 'pending' && !v.is_allocated)
-    return matchSearch && matchPriority && matchAlloc
+    
+    return matchSearch && matchPriority && matchAlloc && matchDisaster
   })
 
   const totalPeople = victims.reduce((acc, v) => acc + (Number(v.family_size) || 1), 0)
@@ -247,11 +342,14 @@ export default function VictimsPage() {
 
   const openCreate = () => {
     const id = `V-${String(victims.length + 1).padStart(3, '0')}`
+    const defaultDisaster = DISASTER_EVENTS[0]
     setForm({
       ...EMPTY_FORM,
       victim_id: id,
+      disaster_id: defaultDisaster.id,
+      disaster_name: defaultDisaster.name,
       direct_allocate: true, // Default to true so admin sees direct allocation immediately
-      allocated_shelter_id: 'S-JN',
+      allocated_shelter_id: defaultDisaster.recommended_shelter_ids[0] || 'S-JN',
       allocated_shelter_name: 'Jawaharlal Nehru Indoor Stadium (S-JN)'
     })
     setEditing(null)
@@ -259,8 +357,11 @@ export default function VictimsPage() {
   }
 
   const openEdit = (v: any) => {
+    const disEvent = DISASTER_EVENTS.find(d => d.id === v.disaster_id)
     setForm({
       ...v,
+      disaster_id: v.disaster_id || 'CYCLONE_MICHAUNG',
+      disaster_name: v.disaster_name || (disEvent?.name || 'Cyclone Michaung (Cat-4 Flood & Storm Surge)'),
       latitude: v.latitude || '',
       longitude: v.longitude || '',
       direct_allocate: !!v.is_allocated,
@@ -271,11 +372,12 @@ export default function VictimsPage() {
     setModal(true)
   }
 
-  // AI Recommendation Solver for a single victim
+  // AI Recommendation Solver factoring in Disaster Hazard Zone, Capacity, and Medical Readiness
   const recommendBestShelter = (currentForm: typeof form) => {
     const famSize = Number(currentForm.family_size) || 1
     const needsMed = !!(currentForm.medical_conditions && currentForm.medical_conditions.trim().length > 0)
     const needsAccess = currentForm.has_disability
+    const disaster = DISASTER_EVENTS.find(d => d.id === currentForm.disaster_id)
 
     // Filter eligible operational shelters
     const candidates = OPERATIONAL_SHELTERS.filter(s => {
@@ -287,13 +389,19 @@ export default function VictimsPage() {
     })
 
     if (candidates.length === 0) {
-      toast.error('No single shelter satisfies all medical and capacity constraints. Consider military hubs S-AV or S-JN.')
+      toast.error('No single shelter satisfies all constraints. Consider military bases S-AV or S-JN.')
       return
     }
 
-    // Sort by best fit: lower risk, high capacity buffer
-    candidates.sort((a, b) => (a.risk_score - b.risk_score) || (b.available - a.available))
+    // Sort by best fit: disaster recommended shelter first, lower risk, high capacity buffer
+    candidates.sort((a, b) => {
+      const aDisasterBonus = disaster?.recommended_shelter_ids.includes(a.id) ? -15 : 0
+      const bDisasterBonus = disaster?.recommended_shelter_ids.includes(b.id) ? -15 : 0
+      return (aDisasterBonus - bDisasterBonus) || (a.risk_score - b.risk_score) || (b.available - a.available)
+    })
+
     const best = candidates[0]
+    const isDisasterMatched = disaster?.recommended_shelter_ids.includes(best.id)
 
     setForm(prev => ({
       ...prev,
@@ -302,9 +410,10 @@ export default function VictimsPage() {
       allocated_shelter_name: `${best.name} (${best.id})`
     }))
 
-    toast.success(`AI Recommended: ${best.name} (${best.available.toLocaleString()} free beds, Medical verified)`, {
-      icon: '⚡'
-    })
+    toast.success(
+      `AI Recommended: ${best.name} (${best.available.toLocaleString()} free beds${isDisasterMatched ? ` · Matched to ${disaster?.short_name}` : ''})`,
+      { icon: '⚡' }
+    )
   }
 
   const handleSave = async () => {
@@ -317,9 +426,14 @@ export default function VictimsPage() {
       shelterName = sh ? `${sh.name} (${sh.id})` : form.allocated_shelter_id
     }
 
+    const disasterObj = DISASTER_EVENTS.find(d => d.id === form.disaster_id)
+    const disasterFullName = disasterObj ? disasterObj.name : form.disaster_name
+
     const payload = {
       ...form,
       id: editing ? editing.id : Date.now(),
+      disaster_id: form.disaster_id,
+      disaster_name: disasterFullName,
       family_size: Number(form.family_size) || 1,
       children_count: Number(form.children_count) || 0,
       elderly_count: Number(form.elderly_count) || 0,
@@ -345,14 +459,14 @@ export default function VictimsPage() {
       toast.success(
         isDirectAlloc
           ? `Victim ${payload.victim_id} updated & directly allocated to ${shelterName}!`
-          : `Victim record updated in queue!`
+          : `Victim record updated in emergency ledger!`
       )
     } else {
       setVictims(prev => [payload, ...prev])
       toast.success(
         isDirectAlloc
           ? `Victim registered & DIRECTLY ALLOCATED to ${shelterName}! 🎉`
-          : 'Victim registered in emergency queue!'
+          : 'Victim registered in emergency triage queue!'
       )
     }
 
@@ -360,7 +474,7 @@ export default function VictimsPage() {
     setSaving(false)
   }
 
-  // Quick 1-Click Direct Allocation from Table Row
+  // Quick 1-Click Direct Allocation from Table Row or Shelter Console
   const handleQuickDirectAllocate = async (victim: any, shelter: any) => {
     if (shelter.status === 'damaged') {
       toast.error('Cannot allocate to damaged shelter! Safety Invariant Violation.')
@@ -382,13 +496,15 @@ export default function VictimsPage() {
     }
 
     setVictims(prev => prev.map(v => v.id === victim.id ? updated : v))
-    setQuickAllocVictim(null)
+    if (quickAllocVictim && quickAllocVictim.id === victim.id) {
+      setQuickAllocVictim(null)
+    }
     toast.success(`Directly allocated ${victim.representative_name} to ${shelterFullName}!`, {
       icon: '✅'
     })
   }
 
-  // Quick Deallocate
+  // Quick Deallocate / Unassign
   const handleDeallocate = async (victim: any) => {
     const updated = {
       ...victim,
@@ -407,6 +523,45 @@ export default function VictimsPage() {
     toast.success(`Deallocated ${victim.representative_name}. Returned to pending queue.`)
   }
 
+  // Batch Allot unallocated victims from a disaster into a shelter
+  const handleBatchAllotToShelter = (shelterId: string, disasterId: string) => {
+    const targetShelter = OPERATIONAL_SHELTERS.find(s => s.id === shelterId)
+    if (!targetShelter || targetShelter.status === 'damaged') {
+      toast.error('Target shelter is damaged or invalid!')
+      return
+    }
+
+    const pending = victims.filter(v => !v.is_allocated && (disasterId === 'all' || v.disaster_id === disasterId))
+    if (pending.length === 0) {
+      toast.error('No pending unallocated victims found for this filter.')
+      return
+    }
+
+    const shelterFullName = `${targetShelter.name} (${targetShelter.id})`
+    let allocatedCountInBatch = 0
+    let totalAssignedPeople = 0
+
+    const updatedVictims = victims.map(v => {
+      if (!v.is_allocated && (disasterId === 'all' || v.disaster_id === disasterId)) {
+        allocatedCountInBatch++
+        totalAssignedPeople += (Number(v.family_size) || 1)
+        return {
+          ...v,
+          is_allocated: true,
+          allocated_shelter_id: targetShelter.id,
+          allocated_shelter_name: shelterFullName
+        }
+      }
+      return v
+    })
+
+    setVictims(updatedVictims)
+    toast.success(
+      `Batch Allotment Complete: ${allocatedCountInBatch} families (${totalAssignedPeople} individuals) assigned to ${targetShelter.name}!`,
+      { icon: '🚀' }
+    )
+  }
+
   const handleDelete = async (id: any, name: string) => {
     if (!confirm(`Delete registry entry for ${name}?`)) return
     try {
@@ -419,9 +574,10 @@ export default function VictimsPage() {
   }
 
   const exportCSV = () => {
-    const headers = ['Victim_ID', 'Name', 'Family_Size', 'Location', 'Priority', 'Medical_Needs', 'Disability', 'Allocated', 'Shelter']
+    const headers = ['Victim_ID', 'Disaster_Event', 'Name', 'Family_Size', 'Location', 'Priority', 'Medical_Needs', 'Disability', 'Allocated', 'Shelter']
     const rows = victims.map(v => [
       v.victim_id,
+      `"${v.disaster_name || v.disaster_id || 'N/A'}"`,
       `"${v.representative_name}"`,
       v.family_size,
       `"${v.current_location}"`,
@@ -443,8 +599,15 @@ export default function VictimsPage() {
   }
 
   const selectedShelterObj = OPERATIONAL_SHELTERS.find(s => s.id === form.allocated_shelter_id)
+  const currentDisasterObj = DISASTER_EVENTS.find(d => d.id === form.disaster_id)
+  const isShelterRecommendedForDisaster = selectedShelterObj && currentDisasterObj?.recommended_shelter_ids.includes(selectedShelterObj.id)
   const hasMedicalMismatch = form.medical_conditions && form.medical_conditions.trim().length > 0 && selectedShelterObj && !selectedShelterObj.has_medical
   const hasDisabilityMismatch = form.has_disability && selectedShelterObj && !selectedShelterObj.is_accessible
+
+  // Stats for the active console shelter
+  const activeConsoleShelter = OPERATIONAL_SHELTERS.find(s => s.id === selectedShelterId) || OPERATIONAL_SHELTERS[0]
+  const shelterAllocatedVictims = victims.filter(v => v.allocated_shelter_id === activeConsoleShelter.id)
+  const unallocatedConsoleVictims = victims.filter(v => !v.is_allocated && (consoleDisasterFilter === 'all' || v.disaster_id === consoleDisasterFilter))
 
   return (
     <div className="p-6 space-y-6 bg-[#F0F4F8] min-h-full">
@@ -456,10 +619,19 @@ export default function VictimsPage() {
             Victim Registration & Triage Registry
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Admin intake portal with <strong>Direct Shelter Allocation</strong> & real-time automated AI triage matching
+            Admin intake portal with <strong>Disaster-Aware Direct Shelter Allocation</strong> & real-time automated AI triage matching
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Admin Shelter Allotment Console Button */}
+          <button
+            onClick={() => setShelterConsoleOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl font-bold text-sm shadow-xs transition"
+          >
+            <Building2 className="w-4 h-4 text-indigo-600" />
+            <span>Shelter Allotment Center</span>
+          </button>
+
           <button
             onClick={exportCSV}
             className="flex items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl font-bold text-sm shadow-xs transition"
@@ -467,6 +639,7 @@ export default function VictimsPage() {
             <Download className="w-4 h-4 text-slate-500" />
             <span>Export CSV</span>
           </button>
+
           <button
             onClick={openCreate}
             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rescue-blue to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-all hover:scale-102"
@@ -506,7 +679,7 @@ export default function VictimsPage() {
             <Heart className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Vulnerable Demographics</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Vulnerable Groups</p>
             <p className="text-2xl font-black text-purple-600">{vulnerableCount}</p>
             <p className="text-[11px] text-slate-500 font-medium">Infants, children & elders</p>
           </div>
@@ -524,7 +697,7 @@ export default function VictimsPage() {
         </div>
       </div>
 
-      {/* ── FILTER & SEARCH ────────────────────────────── */}
+      {/* ── FILTER, DISASTER SELECTION & SEARCH ──────────────── */}
       <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -532,13 +705,30 @@ export default function VictimsPage() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search by name, ID, or condition..."
+            placeholder="Search victim, disaster, location..."
             className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-rescue-blue transition"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Priority:</span>
+          {/* Disaster Event Filter Dropdown */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Disaster:</span>
+            <select
+              value={disasterFilter}
+              onChange={e => setDisasterFilter(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-rescue-blue transition"
+            >
+              <option value="all">⚡ All Active Disasters (6 Incidents)</option>
+              {DISASTER_EVENTS.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.icon} {d.short_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Priority:</span>
           {['all', 'critical', 'high', 'medium', 'low'].map(p => (
             <button
               key={p}
@@ -553,7 +743,7 @@ export default function VictimsPage() {
             </button>
           ))}
 
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-2 mr-1">Status:</span>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Status:</span>
           {['all', 'pending', 'allocated'].map(st => (
             <button
               key={st}
@@ -577,6 +767,7 @@ export default function VictimsPage() {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider">
                 <th className="px-5 py-3.5">ID & Representative</th>
+                <th className="px-5 py-3.5">Disaster Incident</th>
                 <th className="px-5 py-3.5">Family Details</th>
                 <th className="px-5 py-3.5">Hazard Location</th>
                 <th className="px-5 py-3.5">Triage Level</th>
@@ -601,6 +792,11 @@ export default function VictimsPage() {
                         </span>
                       </div>
                     </div>
+                  </td>
+
+                  {/* Disaster Event */}
+                  <td className="px-5 py-4">
+                    <DisasterBadge disasterId={v.disaster_id} />
                   </td>
 
                   {/* Family size */}
@@ -711,7 +907,7 @@ export default function VictimsPage() {
         </div>
       </div>
 
-      {/* ── MODAL 1: REGISTER NEW VICTIM WITH DIRECT ALLOCATE OPTION ──────────────── */}
+      {/* ── MODAL 1: REGISTER / EDIT VICTIM WITH DISASTER SELECTION & DIRECT ALLOCATE ───────── */}
       <AnimatePresence>
         {modal && (
           <motion.div
@@ -729,7 +925,7 @@ export default function VictimsPage() {
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <h2 className="font-black text-slate-900 text-lg">
-                    {editing ? 'Edit Victim Profile & Shelter Match' : 'Register New Disaster Victim Family'}
+                    {editing ? 'Edit Victim Profile & Disaster Allocation' : 'Register New Disaster Victim Family'}
                   </h2>
                   <p className="text-xs text-slate-500">NDMA Standard Emergency Triage Intake Portal</p>
                 </div>
@@ -742,13 +938,54 @@ export default function VictimsPage() {
               </div>
 
               <div className="p-6 space-y-5">
+                {/* ── DISASTER SELECTION SECTION ── */}
+                <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <Compass className="w-4 h-4 text-amber-600" />
+                      <span>Associated Disaster Incident / Hazard Zone *</span>
+                    </label>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      Active Threat Context
+                    </span>
+                  </div>
+
+                  <select
+                    value={form.disaster_id}
+                    onChange={e => {
+                      const disId = e.target.value
+                      const selectedDisaster = DISASTER_EVENTS.find(d => d.id === disId)
+                      setForm(f => ({
+                        ...f,
+                        disaster_id: disId,
+                        disaster_name: selectedDisaster ? selectedDisaster.name : disId
+                      }))
+                    }}
+                    className="w-full border border-amber-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 bg-white focus:outline-none focus:border-rescue-blue"
+                  >
+                    {DISASTER_EVENTS.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.icon} {d.name} — [{d.severity.toUpperCase()}] ({d.region})
+                      </option>
+                    ))}
+                  </select>
+
+                  {currentDisasterObj && (
+                    <div className="text-[11px] text-slate-600 flex flex-wrap items-center justify-between gap-1 pt-1">
+                      <span>Region: <strong>{currentDisasterObj.region}</strong></span>
+                      <span>Type: <strong className="text-amber-800">{currentDisasterObj.type}</strong></span>
+                      <span>Recommended Relief: <strong>{currentDisasterObj.recommended_shelter_ids.join(', ')}</strong></span>
+                    </div>
+                  )}
+                </div>
+
                 {/* ── BASIC INFO GRID ── */}
                 <div className="grid grid-cols-2 gap-4">
                   {[
                     { key: 'victim_id', label: 'Victim ID *', placeholder: 'V-015' },
                     { key: 'representative_name', label: 'Family Representative Name *', placeholder: 'K. Senthil' },
                     { key: 'family_size', label: 'Total Family Size *', type: 'number', placeholder: '4' },
-                    { key: 'current_location', label: 'Current Disaster Location *', placeholder: 'Velachery, Chennai' },
+                    { key: 'current_location', label: 'Current Evacuation Location *', placeholder: 'Velachery, Chennai' },
                     { key: 'children_count', label: 'Number of Children (<12 yrs)', type: 'number', placeholder: '1' },
                     { key: 'elderly_count', label: 'Number of Elders (>65 yrs)', type: 'number', placeholder: '1' },
                     { key: 'latitude', label: 'GPS Latitude', placeholder: '13.0827' },
@@ -815,7 +1052,7 @@ export default function VictimsPage() {
                   </div>
                 </div>
 
-                {/* ── HIGHLIGHTED: DIRECT ALLOCATE OPTION SECTION ── */}
+                {/* ── DIRECT ALLOCATE OPTION SECTION ── */}
                 <div className="p-4 bg-gradient-to-br from-blue-50/80 via-indigo-50/50 to-slate-50 border-2 border-blue-200 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -824,7 +1061,7 @@ export default function VictimsPage() {
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-slate-900 leading-tight">Direct Shelter Allocation</h4>
-                        <p className="text-[11px] text-slate-500">Assign this family unit to a shelter directly upon registration</p>
+                        <p className="text-[11px] text-slate-500">Directly assign shelter bed to this family upon intake</p>
                       </div>
                     </div>
 
@@ -856,7 +1093,7 @@ export default function VictimsPage() {
                           className="flex items-center gap-1 text-[11px] font-bold text-rescue-blue hover:text-blue-700 bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-xs transition"
                         >
                           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                          <span>AI Auto-Recommend Best Fit</span>
+                          <span>AI Auto-Recommend Best Fit for {currentDisasterObj?.short_name || 'Disaster'}</span>
                         </button>
                       </div>
 
@@ -874,22 +1111,32 @@ export default function VictimsPage() {
                         className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:border-rescue-blue bg-white"
                       >
                         <option value="">-- Choose a Verified Shelter --</option>
-                        {OPERATIONAL_SHELTERS.map(sh => (
-                          <option
-                            key={sh.id}
-                            value={sh.id}
-                            disabled={sh.status === 'damaged'}
-                          >
-                            {sh.id} - {sh.name} | Free: {sh.available} beds | {sh.has_medical ? '🏥 Medical' : 'No Med'} {sh.status === 'damaged' ? '[⛔ DAMAGED - UNUSABLE]' : ''}
-                          </option>
-                        ))}
+                        {OPERATIONAL_SHELTERS.map(sh => {
+                          const isRecommended = currentDisasterObj?.recommended_shelter_ids.includes(sh.id)
+                          return (
+                            <option
+                              key={sh.id}
+                              value={sh.id}
+                              disabled={sh.status === 'damaged'}
+                            >
+                              {sh.id} - {sh.name} | Free: {sh.available} beds | {sh.has_medical ? '🏥 Medical' : 'No Med'} {isRecommended ? '★ [Disaster Hub]' : ''} {sh.status === 'damaged' ? '[⛔ DAMAGED - UNUSABLE]' : ''}
+                            </option>
+                          )
+                        })}
                       </select>
 
                       {/* Shelter details card */}
                       {selectedShelterObj && (
                         <div className="bg-white rounded-xl p-3 border border-slate-200 text-xs space-y-1.5 shadow-xs">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-900">{selectedShelterObj.name}</span>
+                            <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                              <span>{selectedShelterObj.name}</span>
+                              {isShelterRecommendedForDisaster && (
+                                <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">
+                                  ★ Recommended for {currentDisasterObj?.short_name}
+                                </span>
+                              )}
+                            </span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                               selectedShelterObj.status === 'damaged' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'
                             }`}>
@@ -907,13 +1154,13 @@ export default function VictimsPage() {
                           {hasMedicalMismatch && (
                             <div className="flex items-center gap-1.5 text-red-600 bg-red-50 p-2 rounded-lg text-[11px] font-semibold border border-red-200">
                               <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span>Warning: This victim requires medical support, but this shelter lacks a medical bay!</span>
+                              <span>Warning: This victim requires medical care, but this shelter has no clinical bay!</span>
                             </div>
                           )}
                           {hasDisabilityMismatch && (
                             <div className="flex items-center gap-1.5 text-amber-700 bg-amber-50 p-2 rounded-lg text-[11px] font-semibold border border-amber-200">
                               <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span>Warning: Wheelchair access required, but facility has no verified ramp!</span>
+                              <span>Warning: Wheelchair access needed, but facility lacks ramps!</span>
                             </div>
                           )}
                         </div>
@@ -987,33 +1234,41 @@ export default function VictimsPage() {
               </div>
 
               <div className="p-6 space-y-4">
-                {/* Victim Triage summary */}
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <span className="text-slate-400 font-bold uppercase text-[10px]">Location:</span>{' '}
-                    <span className="font-semibold text-slate-800">{quickAllocVictim.current_location}</span>
+                {/* Victim Triage & Disaster summary */}
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span className="text-slate-500 font-bold uppercase text-[10px]">Disaster Context:</span>
+                    <DisasterBadge disasterId={quickAllocVictim.disaster_id} />
                   </div>
-                  <div>
-                    <span className="text-slate-400 font-bold uppercase text-[10px]">Priority:</span>{' '}
-                    <PriorityBadge p={quickAllocVictim.priority} />
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-bold uppercase text-[10px]">Medical:</span>{' '}
-                    <span className={quickAllocVictim.medical_conditions ? 'text-red-600 font-bold' : 'text-slate-500'}>
-                      {quickAllocVictim.medical_conditions || 'None'}
-                    </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <span className="text-slate-400 font-bold uppercase text-[10px]">Location:</span>{' '}
+                      <span className="font-semibold text-slate-800">{quickAllocVictim.current_location}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-bold uppercase text-[10px]">Priority:</span>{' '}
+                      <PriorityBadge p={quickAllocVictim.priority} />
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-bold uppercase text-[10px]">Medical:</span>{' '}
+                      <span className={quickAllocVictim.medical_conditions ? 'text-red-600 font-bold' : 'text-slate-500'}>
+                        {quickAllocVictim.medical_conditions || 'None'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Available Verified Relief Shelters:
+                  Select Verified Relief Shelter:
                 </div>
 
-                {/* Shelters quick list */}
+                {/* Shelters quick list with disaster recommendation tag */}
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                   {OPERATIONAL_SHELTERS.map(sh => {
                     const isDamaged = sh.status === 'damaged'
                     const isCurrent = quickAllocVictim.allocated_shelter_id === sh.id
+                    const victimDisaster = DISASTER_EVENTS.find(d => d.id === quickAllocVictim.disaster_id)
+                    const isDisasterRecommended = victimDisaster?.recommended_shelter_ids.includes(sh.id)
 
                     return (
                       <div
@@ -1027,11 +1282,16 @@ export default function VictimsPage() {
                         }`}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span className="text-xs font-mono font-black text-rescue-blue bg-blue-100/50 px-2 py-0.5 rounded">
                               {sh.id}
                             </span>
                             <span className="text-xs font-bold text-slate-900 truncate">{sh.name}</span>
+                            {isDisasterRecommended && (
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                                ★ Disaster Hub
+                              </span>
+                            )}
                             {isCurrent && (
                               <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
                                 CURRENT
@@ -1083,16 +1343,261 @@ export default function VictimsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── MODAL 3: ADMIN SHELTER ALLOTMENT CONSOLE ───────────────────────── */}
+      <AnimatePresence>
+        {shelterConsoleOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-900 to-indigo-900 text-white">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-lg text-white">Admin Shelter Allotment Console</h3>
+                    <p className="text-xs text-blue-200">
+                      Manage shelter capacity allotments, assign pending disaster evacuees & dispatch emergency units
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShelterConsoleOpen(false)}
+                  className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Shelter Selector Pills Bar */}
+              <div className="p-4 bg-slate-50 border-b border-slate-200 overflow-x-auto">
+                <div className="flex items-center gap-2 min-w-max">
+                  {OPERATIONAL_SHELTERS.map(s => {
+                    const isSelected = s.id === selectedShelterId
+                    const isDamaged = s.status === 'damaged'
+                    const allotedForThis = victims.filter(v => v.allocated_shelter_id === s.id).length
+
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => setSelectedShelterId(s.id)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border ${
+                          isSelected
+                            ? 'bg-rescue-blue text-white border-rescue-blue shadow-md'
+                            : isDamaged
+                            ? 'bg-red-50 text-red-600 border-red-200'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'
+                        }`}
+                      >
+                        <span>{s.id}</span>
+                        <span className="font-medium truncate max-w-[120px]">{s.name.split(' ')[0]}</span>
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {allotedForThis} alloted
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Main Console Body: 2-Column Split */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Active Shelter Detail Box */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-mono font-black text-rescue-blue bg-blue-100 px-2 py-0.5 rounded">
+                        {activeConsoleShelter.id}
+                      </span>
+                      <h4 className="text-base font-black text-slate-900">{activeConsoleShelter.name}</h4>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        activeConsoleShelter.status === 'damaged' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {activeConsoleShelter.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">{activeConsoleShelter.address} · {activeConsoleShelter.contact}</p>
+                    <div className="flex flex-wrap items-center gap-3 text-xs mt-2">
+                      <span>Total Capacity: <strong>{activeConsoleShelter.capacity.toLocaleString()}</strong></span>
+                      <span>Occupied: <strong>{activeConsoleShelter.occupancy.toLocaleString()}</strong></span>
+                      <span>Available: <strong className="text-emerald-700">{activeConsoleShelter.available.toLocaleString()} beds</strong></span>
+                      <span>Medical Bay: <strong>{activeConsoleShelter.has_medical ? '✅ 50-Bed Clinical' : '❌ None'}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Batch Allot Action */}
+                  {activeConsoleShelter.status !== 'damaged' && (
+                    <div className="flex flex-col gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => handleBatchAllotToShelter(activeConsoleShelter.id, consoleDisasterFilter)}
+                        className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2"
+                      >
+                        <Zap className="w-3.5 h-3.5 fill-white" />
+                        <span>Batch Allot Pending Victims to {activeConsoleShelter.id}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2 Columns: Unallocated Queue vs Allotted In This Shelter */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left Column: Unallocated Queue */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                        <h5 className="font-bold text-slate-800 text-sm">
+                          Pending Victims Queue ({unallocatedConsoleVictims.length})
+                        </h5>
+                      </div>
+
+                      {/* Filter by Disaster in Console */}
+                      <select
+                        value={consoleDisasterFilter}
+                        onChange={e => setConsoleDisasterFilter(e.target.value)}
+                        className="border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 bg-white"
+                      >
+                        <option value="all">All Disasters</option>
+                        {DISASTER_EVENTS.map(d => (
+                          <option key={d.id} value={d.id}>{d.icon} {d.short_name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                      {unallocatedConsoleVictims.length === 0 ? (
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center text-xs text-slate-400">
+                          No pending victims waiting for allotment under this disaster filter.
+                        </div>
+                      ) : (
+                        unallocatedConsoleVictims.map(v => (
+                          <div
+                            key={v.id || v.victim_id}
+                            className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs hover:border-blue-300 transition flex items-center justify-between gap-3"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-bold text-slate-900 text-xs truncate">{v.representative_name}</span>
+                                <span className="font-mono text-[10px] text-rescue-blue bg-blue-50 px-1.5 py-0.5 rounded">{v.victim_id}</span>
+                                <PriorityBadge p={v.priority} />
+                              </div>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                <DisasterBadge disasterId={v.disaster_id} />
+                                <span>{v.family_size} Members</span>
+                              </div>
+                              {v.medical_conditions && (
+                                <p className="text-[10px] text-red-600 font-medium truncate mt-1">
+                                  ⚠️ {v.medical_conditions}
+                                </p>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() => handleQuickDirectAllocate(v, activeConsoleShelter)}
+                              disabled={activeConsoleShelter.status === 'damaged'}
+                              className="px-3 py-1.5 bg-rescue-blue hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex-shrink-0 flex items-center gap-1 disabled:opacity-50"
+                            >
+                              <span>Allot Bed</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Currently Allotted in this shelter */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                        <h5 className="font-bold text-slate-800 text-sm">
+                          Allotted to {activeConsoleShelter.name.split(' ')[0]} ({shelterAllocatedVictims.length})
+                        </h5>
+                      </div>
+                      <span className="text-xs text-slate-500">
+                        Total {shelterAllocatedVictims.reduce((acc, v) => acc + (Number(v.family_size) || 1), 0)} people
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                      {shelterAllocatedVictims.length === 0 ? (
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center text-xs text-slate-400">
+                          No victim families directly allotted to this facility yet.
+                        </div>
+                      ) : (
+                        shelterAllocatedVictims.map(v => (
+                          <div
+                            key={v.id || v.victim_id}
+                            className="bg-emerald-50/40 border border-emerald-200 rounded-xl p-3 shadow-2xs flex items-center justify-between gap-3"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-bold text-slate-900 text-xs truncate">{v.representative_name}</span>
+                                <span className="font-mono text-[10px] text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">{v.victim_id}</span>
+                                <PriorityBadge p={v.priority} />
+                              </div>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                <DisasterBadge disasterId={v.disaster_id} />
+                                <span>{v.family_size} Members</span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => handleDeallocate(v)}
+                              className="px-2.5 py-1 text-slate-500 hover:text-red-600 hover:bg-white rounded-lg text-xs font-semibold border border-slate-200 transition"
+                            >
+                              Unassign
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Console Footer */}
+              <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                <p className="text-xs text-slate-500">
+                  Capacity numbers reflect live synchronizations across Tamil Nadu and National Disaster Management grids.
+                </p>
+                <button
+                  onClick={() => setShelterConsoleOpen(false)}
+                  className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs transition"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-// ── REAL EVACUEES TELEMETRY DATASET ──────────────────────────
+// ── REAL EVACUEES TELEMETRY DATASET WITH AUTHENTIC DISASTERS ──────────
 const DEMO_REAL_VICTIMS = [
   {
     id: 1,
     victim_id: 'V-001',
     representative_name: 'Rajesh Kumar & Family',
+    disaster_id: 'CYCLONE_MICHAUNG',
+    disaster_name: 'Cyclone Michaung (Cat-4 Flood & Storm Surge)',
     family_size: 5,
     current_location: 'Besant Nagar Coastal Breach',
     medical_conditions: 'Hypertension, Minor hypothermia',
@@ -1108,6 +1613,8 @@ const DEMO_REAL_VICTIMS = [
     id: 2,
     victim_id: 'V-002',
     representative_name: 'Selvanathan P.',
+    disaster_id: 'CYCLONE_FENGAL',
+    disaster_name: 'Cyclone Fengal Flash Inundation',
     family_size: 4,
     current_location: 'Villupuram Fengal Flash Inundation',
     medical_conditions: 'None',
@@ -1123,6 +1630,8 @@ const DEMO_REAL_VICTIMS = [
     id: 3,
     victim_id: 'V-003',
     representative_name: 'Ibrahim Sheikh (Critical Patient)',
+    disaster_id: 'CHENNAI_DELUGE',
+    disaster_name: 'Chennai Adyar Basin Flash Floods',
     family_size: 7,
     current_location: 'Velachery Adyar Basin Flood',
     medical_conditions: 'Congestive Heart Failure, Severe COPD (Oxygen required)',
@@ -1138,6 +1647,8 @@ const DEMO_REAL_VICTIMS = [
     id: 4,
     victim_id: 'V-004',
     representative_name: 'Anjali Nair & Children',
+    disaster_id: 'WAYANAD_LANDSLIDES',
+    disaster_name: 'Wayanad Landslides (Chooralmala & Mundakkai)',
     family_size: 3,
     current_location: 'Chooralmala Landslide Periphery (Wayanad)',
     medical_conditions: 'Crush laceration to right leg, psychological trauma',
@@ -1153,6 +1664,8 @@ const DEMO_REAL_VICTIMS = [
     id: 5,
     victim_id: 'V-005',
     representative_name: 'Muthusamy V.',
+    disaster_id: 'CHENNAI_DELUGE',
+    disaster_name: 'Chennai Adyar Basin Flash Floods',
     family_size: 6,
     current_location: 'Pallikaranai Low-Lying Marshland',
     medical_conditions: 'Type 1 Diabetes (Insulin refrigeration needed)',
@@ -1168,6 +1681,8 @@ const DEMO_REAL_VICTIMS = [
     id: 6,
     victim_id: 'V-006',
     representative_name: 'Devi & Krishnan',
+    disaster_id: 'WAYANAD_LANDSLIDES',
+    disaster_name: 'Wayanad Landslides (Chooralmala & Mundakkai)',
     family_size: 2,
     current_location: 'Mundakkai Debris Zone (Wayanad)',
     medical_conditions: 'Multiple rib fractures from collapsed masonry',
@@ -1183,6 +1698,8 @@ const DEMO_REAL_VICTIMS = [
     id: 7,
     victim_id: 'V-007',
     representative_name: 'Dr. Ramesh Sundaram',
+    disaster_id: 'CYCLONE_MICHAUNG',
+    disaster_name: 'Cyclone Michaung (Cat-4 Flood & Storm Surge)',
     family_size: 4,
     current_location: 'Besant Nagar Storm Inundation',
     medical_conditions: 'Chronic Asthma, Infant formula needed',
@@ -1198,6 +1715,8 @@ const DEMO_REAL_VICTIMS = [
     id: 8,
     victim_id: 'V-008',
     representative_name: 'Sarala Devi',
+    disaster_id: 'CYCLONE_MICHAUNG',
+    disaster_name: 'Cyclone Michaung (Cat-4 Flood & Storm Surge)',
     family_size: 5,
     current_location: 'Coimbatore Seismic Impact Ward',
     medical_conditions: 'Head trauma from ceiling collapse',
@@ -1213,6 +1732,8 @@ const DEMO_REAL_VICTIMS = [
     id: 9,
     victim_id: 'V-009',
     representative_name: 'Karthik Raja',
+    disaster_id: 'CHENNAI_DELUGE',
+    disaster_name: 'Chennai Adyar Basin Flash Floods',
     family_size: 3,
     current_location: 'Adyar River Overbank Corridor',
     medical_conditions: 'None',
@@ -1228,6 +1749,8 @@ const DEMO_REAL_VICTIMS = [
     id: 10,
     victim_id: 'V-010',
     representative_name: 'Kamala Bai (Post-Surgery)',
+    disaster_id: 'CHENNAI_DELUGE',
+    disaster_name: 'Chennai Adyar Basin Flash Floods',
     family_size: 1,
     current_location: 'Triplicane High Water Level',
     medical_conditions: 'Post-cardiac bypass recovery, bedridden',
@@ -1243,6 +1766,8 @@ const DEMO_REAL_VICTIMS = [
     id: 11,
     victim_id: 'V-011',
     representative_name: 'Manoharan & Group',
+    disaster_id: 'NILGIRIS_WILDFIRE',
+    disaster_name: 'Nilgiris Mudumalai Forest Fire Buffer',
     family_size: 8,
     current_location: 'Mudumalai Wildfire Buffer (Nilgiris)',
     medical_conditions: 'Smoke inhalation, eye irritation',
@@ -1258,6 +1783,8 @@ const DEMO_REAL_VICTIMS = [
     id: 12,
     victim_id: 'V-012',
     representative_name: 'Fatima Begum (Maternity)',
+    disaster_id: 'CYCLONE_MICHAUNG',
+    disaster_name: 'Cyclone Michaung (Cat-4 Flood & Storm Surge)',
     family_size: 9,
     current_location: 'Pulianthope Low-Lying Corridor',
     medical_conditions: '8-Month High-Risk Pregnancy, Requires Immediate Obstetrics Care',

@@ -1,9 +1,23 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Edit2, Trash2, Building2, Wifi, Zap, Heart, Accessibility, Shield, CheckCircle2, AlertTriangle, Phone, MapPin, X } from 'lucide-react'
+import {
+  Plus, Search, Edit2, Trash2, Building2, Wifi, Zap, Heart,
+  Accessibility, Shield, CheckCircle2, AlertTriangle, Phone, MapPin, X,
+  Users, ArrowRight, Check, Sparkles, Filter, Compass
+} from 'lucide-react'
 import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
+
+// ── DISASTER INCIDENTS TELEMETRY ─────────────────────────────
+const DISASTER_EVENTS = [
+  { id: 'CYCLONE_MICHAUNG', name: 'Cyclone Michaung', icon: '🌀', region: 'North Coastal TN' },
+  { id: 'WAYANAD_LANDSLIDES', name: 'Wayanad Landslides', icon: '⛰️', region: 'Wayanad, Kerala' },
+  { id: 'CYCLONE_FENGAL', name: 'Cyclone Fengal', icon: '🌊', region: 'Villupuram & Puducherry' },
+  { id: 'CHENNAI_DELUGE', name: 'Chennai Adyar Floods', icon: '🌧️', region: 'Chennai City' },
+  { id: 'ENNORE_GAS_OIL', name: 'Ennore Chemical Hazard', icon: '☣️', region: 'North Chennai' },
+  { id: 'NILGIRIS_WILDFIRE', name: 'Nilgiris Forest Fire', icon: '🔥', region: 'Nilgiris' }
+]
 
 function StatusBadge({ status }: { status: string }) {
   const cls = {
@@ -67,6 +81,11 @@ export default function SheltersPage() {
   const [editing, setEditing] = useState<any>(null)
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [saving, setSaving] = useState(false)
+
+  // Direct Victim Allotment to Shelter state
+  const [allotModalShelter, setAllotModalShelter] = useState<any>(null)
+  const [allotDisasterFilter, setAllotDisasterFilter] = useState('all')
+  const [pendingVictims, setPendingVictims] = useState<any[]>(DEMO_PENDING_VICTIMS)
 
   const load = async () => {
     try {
@@ -168,6 +187,73 @@ export default function SheltersPage() {
     toast.success(`${name} removed from active operations`)
   }
 
+  // Allot a single pending victim to the active shelter
+  const handleAllotVictimToShelter = (victim: any, targetShelter: any) => {
+    const famSize = Number(victim.family_size) || 1
+    const newOccupancy = (Number(targetShelter.current_occupancy) || 0) + famSize
+    const newAvail = Math.max(0, (Number(targetShelter.total_capacity) || 0) - newOccupancy)
+
+    // Update shelter occupancy
+    setShelters(prev => prev.map(s => s.id === targetShelter.id ? {
+      ...s,
+      current_occupancy: newOccupancy,
+      available_capacity: newAvail
+    } : s))
+
+    // Update allotModalShelter state
+    setAllotModalShelter((prev: any) => ({
+      ...prev,
+      current_occupancy: newOccupancy,
+      available_capacity: newAvail
+    }))
+
+    // Remove from pending queue
+    setPendingVictims(prev => prev.filter(v => v.id !== victim.id))
+
+    toast.success(
+      `Allotted ${victim.representative_name} (${famSize} members) to ${targetShelter.name}!`,
+      { icon: '🏛️' }
+    )
+  }
+
+  // Batch allot all unallocated victims under current disaster filter to this shelter
+  const handleBatchAllot = (targetShelter: any) => {
+    const eligible = pendingVictims.filter(v => allotDisasterFilter === 'all' || v.disaster_id === allotDisasterFilter)
+    if (eligible.length === 0) {
+      toast.error('No pending victims found under this disaster filter.')
+      return
+    }
+
+    let totalPeople = 0
+    eligible.forEach(v => { totalPeople += (Number(v.family_size) || 1) })
+
+    const newOccupancy = (Number(targetShelter.current_occupancy) || 0) + totalPeople
+    const newAvail = Math.max(0, (Number(targetShelter.total_capacity) || 0) - newOccupancy)
+
+    // Update shelters
+    setShelters(prev => prev.map(s => s.id === targetShelter.id ? {
+      ...s,
+      current_occupancy: newOccupancy,
+      available_capacity: newAvail
+    } : s))
+
+    setAllotModalShelter((prev: any) => ({
+      ...prev,
+      current_occupancy: newOccupancy,
+      available_capacity: newAvail
+    }))
+
+    // Remove eligible from pending
+    setPendingVictims(prev => prev.filter(v => !(allotDisasterFilter === 'all' || v.disaster_id === allotDisasterFilter)))
+
+    toast.success(
+      `Batch Allotment Complete: ${eligible.length} families (${totalPeople} individuals) assigned to ${targetShelter.name}!`,
+      { icon: '🚀' }
+    )
+  }
+
+  const filteredPending = pendingVictims.filter(v => allotDisasterFilter === 'all' || v.disaster_id === allotDisasterFilter)
+
   return (
     <div className="p-6 space-y-6 bg-[#F0F4F8] min-h-full">
       {/* ── HEADER ─────────────────────────────────────── */}
@@ -178,7 +264,7 @@ export default function SheltersPage() {
             Relief Shelter Management Network
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Real-time geospatial capacities, medical readiness, and occupancy tracking across active NDMA relief camps
+            Admin portal with <strong>Direct Shelter Allotment</strong>, disaster zone mapping & real-time capacity telemetry
           </p>
         </div>
         <button
@@ -349,8 +435,8 @@ export default function SheltersPage() {
                 )}
               </div>
 
-              {/* Card Footer: Facilities & Contact */}
-              <div className="pt-3 border-t border-slate-100 space-y-2">
+              {/* Card Footer: Facilities, Contact & DIRECT ALLOT BUTTON */}
+              <div className="pt-3 border-t border-slate-100 space-y-3">
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <span className="font-semibold text-slate-600 text-[11px]">Equipped Facilities:</span>
                   <div className="flex items-center gap-1">
@@ -373,13 +459,29 @@ export default function SheltersPage() {
                     </a>
                   </div>
                 )}
+
+                {/* ── ADMIN DIRECT ALLOT OPTION BUTTON ── */}
+                <div className="pt-2">
+                  <button
+                    onClick={() => setAllotModalShelter(s)}
+                    disabled={isDamaged}
+                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-2 ${
+                      isDamaged
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                        : 'bg-gradient-to-r from-rescue-blue to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:scale-101'
+                    }`}
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-current" />
+                    <span>{isDamaged ? 'Allotment Disabled (Damaged)' : 'Allot Disaster Victims'}</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           )
         })}
       </div>
 
-      {/* ── MODAL: ADD / EDIT SHELTER ──────────────────── */}
+      {/* ── MODAL 1: ADD / EDIT SHELTER ──────────────────── */}
       <AnimatePresence>
         {modal && (
           <motion.div
@@ -504,11 +606,141 @@ export default function SheltersPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── MODAL 2: DIRECT VICTIM ALLOTMENT TO SHELTER ────────────────────── */}
+      <AnimatePresence>
+        {allotModalShelter && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[88vh] overflow-y-auto border border-slate-100"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rescue-blue text-white flex items-center justify-center font-bold">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 text-base">
+                      Allot Disaster Victims to {allotModalShelter.name}
+                    </h3>
+                    <p className="text-xs text-slate-600">
+                      ID: <span className="font-mono font-bold text-rescue-blue">{allotModalShelter.shelter_id}</span> · Available Beds:{' '}
+                      <strong className="text-emerald-700">{allotModalShelter.available_capacity || (allotModalShelter.total_capacity - allotModalShelter.current_occupancy)}</strong>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setAllotModalShelter(null)}
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* Disaster Filter and Batch Button */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500 uppercase">Filter Disaster:</span>
+                    <select
+                      value={allotDisasterFilter}
+                      onChange={e => setAllotDisasterFilter(e.target.value)}
+                      className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-800"
+                    >
+                      <option value="all">⚡ All Active Disasters</option>
+                      {DISASTER_EVENTS.map(d => (
+                        <option key={d.id} value={d.id}>{d.icon} {d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={() => handleBatchAllot(allotModalShelter)}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 self-end sm:self-auto"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-white" />
+                    <span>Batch Allot Filtered</span>
+                  </button>
+                </div>
+
+                <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Pending Evacuees Awaiting Shelter Bed ({filteredPending.length}):
+                </div>
+
+                {/* List of pending victims */}
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  {filteredPending.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-2xl">
+                      No pending victims in queue for this disaster filter. All families are safely allotted.
+                    </div>
+                  ) : (
+                    filteredPending.map(v => (
+                      <div
+                        key={v.id}
+                        className="bg-white border border-slate-200 hover:border-blue-300 rounded-2xl p-3.5 transition shadow-2xs flex items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-slate-900 text-xs truncate">{v.representative_name}</span>
+                            <span className="font-mono text-[10px] text-rescue-blue bg-blue-50 px-1.5 py-0.5 rounded">{v.victim_id}</span>
+                            <span className="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full uppercase">
+                              {v.priority}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                            <span className="font-medium text-slate-700">{v.disaster_name}</span>
+                            <span>·</span>
+                            <span>{v.family_size} Members</span>
+                            <span>·</span>
+                            <span>{v.current_location}</span>
+                          </div>
+                          {v.medical_conditions && (
+                            <p className="text-[10px] text-red-600 font-medium truncate mt-1">
+                              ⚠️ {v.medical_conditions}
+                            </p>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => handleAllotVictimToShelter(v, allotModalShelter)}
+                          className="px-3.5 py-1.5 bg-rescue-blue hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1 flex-shrink-0"
+                        >
+                          <span>Allot Bed</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex justify-between items-center">
+                <span className="text-xs text-slate-500">Allotment logs sync with central NDMA state registry</span>
+                <button
+                  onClick={() => setAllotModalShelter(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-bold text-xs hover:bg-white transition"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-// REAL SHELTERS BASED ON AUTHENTIC NDMA / TNSDMA RECENT RELIEF DATA
+// ── REAL SHELTERS DATASET ────────────────────────────────────
 const DEMO_REAL_SHELTERS = [
   {
     id: 1, shelter_id: 'S-JN', name: 'Jawaharlal Nehru Indoor Stadium',
@@ -590,4 +822,85 @@ const DEMO_REAL_SHELTERS = [
     risk_score: 0.03, status: 'operational', contact_name: 'Indian Navy TN HQ', contact_phone: '+91-4365-282601',
     notes: 'Naval aviation support, water purifiers, and 2,000+ ready beds for Cyclone Fengal evacuees.'
   },
+]
+
+// ── PENDING UNALLOCATED EVACUEES FOR SHELTER ALLOTMENT ────────
+const DEMO_PENDING_VICTIMS = [
+  {
+    id: 3,
+    victim_id: 'V-003',
+    representative_name: 'Ibrahim Sheikh (Critical Patient)',
+    disaster_id: 'CHENNAI_DELUGE',
+    disaster_name: 'Chennai Adyar Floods',
+    family_size: 7,
+    current_location: 'Velachery Adyar Basin',
+    medical_conditions: 'Congestive Heart Failure, Severe COPD (Oxygen required)',
+    priority: 'critical'
+  },
+  {
+    id: 5,
+    victim_id: 'V-005',
+    representative_name: 'Muthusamy V.',
+    disaster_id: 'CHENNAI_DELUGE',
+    disaster_name: 'Chennai Adyar Floods',
+    family_size: 6,
+    current_location: 'Pallikaranai Marshland',
+    medical_conditions: 'Type 1 Diabetes (Insulin refrigeration)',
+    priority: 'high'
+  },
+  {
+    id: 6,
+    victim_id: 'V-006',
+    representative_name: 'Devi & Krishnan',
+    disaster_id: 'WAYANAD_LANDSLIDES',
+    disaster_name: 'Wayanad Landslides',
+    family_size: 2,
+    current_location: 'Mundakkai Debris Zone',
+    medical_conditions: 'Multiple rib fractures from collapsed masonry',
+    priority: 'critical'
+  },
+  {
+    id: 8,
+    victim_id: 'V-008',
+    representative_name: 'Sarala Devi',
+    disaster_id: 'CYCLONE_MICHAUNG',
+    disaster_name: 'Cyclone Michaung',
+    family_size: 5,
+    current_location: 'Coimbatore Seismic Impact Ward',
+    medical_conditions: 'Head trauma from ceiling collapse',
+    priority: 'critical'
+  },
+  {
+    id: 10,
+    victim_id: 'V-010',
+    representative_name: 'Kamala Bai (Post-Surgery)',
+    disaster_id: 'CHENNAI_DELUGE',
+    disaster_name: 'Chennai Adyar Floods',
+    family_size: 1,
+    current_location: 'Triplicane High Water Level',
+    medical_conditions: 'Post-cardiac bypass recovery, bedridden',
+    priority: 'critical'
+  },
+  {
+    id: 11,
+    victim_id: 'V-011',
+    representative_name: 'Manoharan & Group',
+    disaster_id: 'NILGIRIS_WILDFIRE',
+    disaster_name: 'Nilgiris Forest Fire',
+    family_size: 8,
+    current_location: 'Mudumalai Wildfire Buffer',
+    medical_conditions: 'Smoke inhalation',
+    priority: 'high'
+  },
+  {
+    id: 12,
+    victim_id: 'V-012',
+    representative_name: 'Fatima Begum (Maternity)',
+    disaster_id: 'CYCLONE_MICHAUNG',
+    disaster_name: 'Cyclone Michaung',
+    family_size: 9,
+    current_location: 'Pulianthope Low-Lying Corridor',
+    medical_conditions: '8-Month High-Risk Pregnancy, Requires Immediate Obstetrics Care',
+    priority: 'critical'
+  }
 ]
